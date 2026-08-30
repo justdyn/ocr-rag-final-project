@@ -1,6 +1,12 @@
+.docs
+.cursor
+.claude
 .agents
 AGENTS.md
 node_modules/
 db/*.sqlite
 tmp/
 .DS_Store
+.nvmrc
+.python-version
+skills-lock.json

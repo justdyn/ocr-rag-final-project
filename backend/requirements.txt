@@ -1,0 +1,41 @@
+# Backend dependency baseline — PRD §2.1
+# Chose requirements.txt (not pyproject.toml) to match the PRD's primary manifest
+# and keep the scaffold install path simple for FYP/Docker.
+# Exact pins below are what resolved in this environment on 2026-08-21.
+
+# Web framework
+fastapi==0.136.3
+uvicorn[standard]==0.51.0
+pydantic==2.13.4
+python-multipart==0.0.32
+python-dotenv==1.2.3
+
+# ORM / migrations / async SQLite
+sqlalchemy[asyncio]==2.0.52
+alembic==1.18.5
+aiosqlite==0.22.1
+
+# Vector DB (client declared now; wiring in a later step)
+chromadb==1.5.9
+
+# Retrieval / embeddings (logic in a later step)
+rank-bm25==0.2.2
+sentence-transformers==5.5.1
+
+# Document extraction / OCR (pip wrappers only — Tesseract binary is system-level)
+pypdf==6.7.5
+pytesseract==0.3.13
+Pillow==12.3.0
+# PDF page rasterization for OCR fallback (avoids system Poppler dependency)
+pypdfium2==5.7.0
+
+# Auth
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+# passlib 1.7.4 is incompatible with bcrypt>=4.1 (version probe / 72-byte truncate bugs)
+bcrypt==4.0.1
+# Required by pydantic EmailStr on register/login bodies
+email-validator==2.3.0
+
+# Outbound HTTP (LLM provider client — later step)
+httpx==0.28.1

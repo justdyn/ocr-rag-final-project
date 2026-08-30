@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+
+@source '../**/*.{ts,tsx}';
+
+@theme {
+  /* Styleguide §3.1 minimum token set (+ existing shell tokens kept) */
+  --color-background: #f7f7f5;
+  --color-surface: #ffffff;
+  --color-surface-muted: #efefec;
+  --color-surface-press: #f3f3f3;
+  --color-foreground: #0d0d0d;
+  --color-muted: #8f8f8f;
+  --color-subtle: #5d5d5d;
+  --color-accent: #1a5f4a;
+  --color-accent-foreground: #f5faf8;
+  --color-border: #e2e2de;
+  --color-destructive: #b42318;
+  --color-success: #1b7a3d;
+  --text-display: 2rem;
+  --ease-out-premium: cubic-bezier(0.22, 1, 0.36, 1);
+  --font-sans: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+}
+
+@layer base, rmx-reset, rmx;
+
+/* Composer thumbnail ring — named here because Remix css() has no @keyframes. */
+@keyframes attach-ring-spin {
+  from {
+    transform: rotate(-90deg);
+  }
+  to {
+    transform: rotate(270deg);
+  }
+}

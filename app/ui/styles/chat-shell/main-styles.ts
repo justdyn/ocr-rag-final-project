@@ -1,0 +1,276 @@
+import { css } from 'remix/ui'
+
+import { SIDEBAR_DESKTOP_MIN_PX } from '../../../utils/chat-shell-sidebar.ts'
+
+export const mainStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: '1 1 auto',
+  minWidth: 0,
+  minHeight: '100vh',
+  padding: '0 15px',
+  overflow: 'hidden',
+})
+
+export const mainHeaderStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  height: '52px',
+  padding: '8px',
+  flexShrink: 0,
+  position: 'sticky',
+  top: 0,
+  zIndex: 2,
+  background: 'var(--home-bg)',
+  gap: '8px',
+})
+
+/** Toggle + title share one flex row so the mobile open control never overlaps Remix. */
+export const headerLeadingStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '4px',
+  minWidth: 0,
+  flex: '1 1 auto',
+})
+
+/** Mobile-only open control — desktop uses the in-sidebar collapse controls. */
+export const headerSidebarOpenStyle = css({
+  appearance: 'none',
+  border: 0,
+  margin: 0,
+  padding: 0,
+  width: '36px',
+  height: '36px',
+  flexShrink: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '8px',
+  background: 'transparent',
+  color: 'var(--home-fg)',
+  cursor: 'pointer',
+  transition: 'background-color 150ms var(--home-ease-out), transform 120ms var(--home-ease-out)',
+  '&:hover, &:focus-visible': { background: 'var(--home-surface)', outline: 'none' },
+  '&:active': { transform: 'scale(0.96)' },
+  [`@media (min-width: ${SIDEBAR_DESKTOP_MIN_PX}px)`]: { display: 'none' },
+})
+
+export const modelSelectorStyle = css({
+  appearance: 'none',
+  border: 0,
+  margin: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  minHeight: '36px',
+  padding: '3px 10px',
+  borderRadius: '8px',
+  background: 'transparent',
+  color: 'var(--home-fg)',
+  cursor: 'pointer',
+  font: 'inherit',
+  transition: 'background-color 150ms var(--home-ease-out)',
+  '&:hover, &:focus-visible': { background: 'var(--home-surface)', outline: 'none' },
+})
+
+export const modelNameStyle = css({
+  fontFamily: 'Inter, "Segoe UI", system-ui, sans-serif',
+  fontWeight: 600,
+  fontSize: '18px',
+  lineHeight: '28px',
+  letterSpacing: '-0.27px',
+})
+
+export const headerActionsStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '9px',
+})
+
+export const primaryPillStyle = css({
+  appearance: 'none',
+  border: 0,
+  margin: 0,
+  minHeight: '34px',
+  padding: '7px 12px',
+  borderRadius: '9999px',
+  background: 'var(--home-fg)',
+  color: 'var(--home-bg)',
+  font: 'inherit',
+  fontSize: '14px',
+  lineHeight: '20px',
+  cursor: 'pointer',
+  textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'opacity 150ms var(--home-ease-out), transform 120ms var(--home-ease-out)',
+  '&:hover, &:focus-visible': { opacity: 0.88, outline: 'none' },
+  '&:active': { transform: 'scale(0.98)' },
+})
+
+export const secondaryPillStyle = css({
+  appearance: 'none',
+  margin: 0,
+  minHeight: '36px',
+  padding: '8px 13px',
+  borderRadius: '9999px',
+  border: '1px solid var(--home-border-strong)',
+  background: 'var(--home-bg)',
+  color: 'var(--home-fg)',
+  font: 'inherit',
+  fontSize: '14px',
+  lineHeight: '20px',
+  cursor: 'pointer',
+  textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition:
+    'background-color 150ms var(--home-ease-out), transform 120ms var(--home-ease-out)',
+  '&:hover, &:focus-visible': { background: 'var(--home-surface)', outline: 'none' },
+  '&:active': { transform: 'scale(0.98)' },
+})
+
+export const mainContentStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: '1 1 auto',
+  minHeight: 0,
+  width: '100%',
+  maxWidth: '768px',
+  margin: '0 auto',
+})
+
+/** Vertically centers hero + composer as one unit (Figma main stage). */
+export const mainStageStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flex: '1 1 auto',
+  minHeight: 0,
+  width: '100%',
+  gap: '32px',
+  padding: '24px 0',
+})
+
+export const heroStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '100%',
+  textAlign: 'center',
+})
+
+export const heroHeadingStyle = css({
+  margin: 0,
+  padding: '4px',
+  fontWeight: 400,
+  fontSize: '24px',
+  lineHeight: '28px',
+  letterSpacing: '0.07px',
+  color: 'var(--home-fg)',
+})
+
+export const legalFooterStyle = css({
+  flexShrink: 0,
+  marginTop: 'auto',
+  padding: '8px 8px 24px',
+  textAlign: 'center',
+  '& p': {
+    margin: 0,
+    fontSize: '14px',
+    lineHeight: '14px',
+    color: 'var(--home-subtle)',
+    maxWidth: '42rem',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+  },
+})
+
+export const legalLinkStyle = css({
+  color: 'inherit',
+  textDecoration: 'underline',
+  textUnderlineOffset: '2px',
+  transition: 'color 150ms var(--home-ease-out)',
+  '&:hover, &:focus-visible': { color: 'var(--home-fg)', outline: 'none' },
+})
+
+/** Authenticated chat thread — fills stage between header and composer. */
+export const chatThreadStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+  flex: '1 1 auto',
+  minHeight: 0,
+  width: '100%',
+  overflowY: 'auto',
+  padding: '8px 0 16px',
+})
+
+export const chatStageActiveStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: '1 1 auto',
+  minHeight: 0,
+  width: '100%',
+  gap: '16px',
+  padding: '16px 0 0',
+})
+
+export const scopePromptStyle = css({
+  width: '100%',
+  maxWidth: '420px',
+  padding: '20px',
+  borderRadius: '16px',
+  border: '1px solid var(--home-border-strong)',
+  background: 'var(--home-surface)',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '12px',
+})
+
+export const scopePromptTitleStyle = css({
+  margin: 0,
+  fontWeight: 600,
+  fontSize: '16px',
+  lineHeight: '22px',
+  color: 'var(--home-fg)',
+})
+
+export const scopePromptBodyStyle = css({
+  margin: 0,
+  fontSize: '14px',
+  lineHeight: '20px',
+  color: 'var(--home-muted)',
+})
+
+export const shellAlertStyle = css({
+  width: '100%',
+  padding: '10px 12px',
+  borderRadius: '10px',
+  border: '1px solid var(--home-border-strong)',
+  background: 'var(--home-surface)',
+  color: 'var(--home-fg)',
+  fontSize: '14px',
+  lineHeight: '20px',
+})
+
+export const mainContentWideStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  flex: '1 1 auto',
+  minHeight: 0,
+  width: '100%',
+  maxWidth: '960px',
+  margin: '0 auto',
+  padding: '16px 0 32px',
+})
+
+export const contentPanelStyle = css({
+  width: '100%',
+})
