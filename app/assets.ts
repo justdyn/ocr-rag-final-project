@@ -1,6 +1,14 @@
 import { createAssetServer } from 'remix/assets'
 
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+
 const rootDir = process.cwd()
+
+// Worktrees junction node_modules to the main checkout; the compiler realpath-resolves
+// bare imports, so the allow glob must cover the real directory, not just `<rootDir>/node_modules`.
+// In a normal checkout realpath(cwd/node_modules) === cwd/node_modules and this is a no-op.
+const realNodeModulesDir = fs.realpathSync(path.join(rootDir, 'node_modules')).replace(/\\/g, '/')
 
 /**
  * `@remix-run/assets` watches the filesystem by default (chokidar). That is correct for a
@@ -31,10 +39,12 @@ export const assetServer = createAssetServer({
   },
   allow: [
     'app/assets/**',
+    'app/actions/**',
     'app/ui/**',
     'app/utils/**',
     'app/routes.ts',
     'node_modules/**',
+    `${realNodeModulesDir}/**`,
   ],
   deny: ['app/**/*.server.*'],
   watch: resolveAssetWatch(),

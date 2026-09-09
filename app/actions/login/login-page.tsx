@@ -7,20 +7,24 @@ import { routes } from '../../routes.ts'
 import { AuthShell, authSubmitClassName } from '../../ui/auth-shell.tsx'
 import { Document } from '../../ui/document.tsx'
 import { FormField } from '../../ui/form-field.tsx'
+import { Onboarding } from './onboarding.tsx'
 
 export type LoginPageProps = {
   error?: string
   email?: string
   returnTo?: string
+  showOnboarding?: boolean
 }
 
 export function LoginPage(handle: Handle<LoginPageProps>) {
   return () => {
-    let { error, email = '', returnTo } = handle.props
+    let { error, email = '', returnTo, showOnboarding = false } = handle.props
     let action = routes.login.action.href()
 
     return (
       <Document title="Sign in · DocIntel">
+        {/* Splash + form stay mounted (Remix soft-nav hydration). Hide via data-show. */}
+        <Onboarding show={showOnboarding} />
         <AuthShell
           title="Sign in"
           subtitle="Welcome back! Please enter your details."
@@ -30,7 +34,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
               No account?{' '}
               <a
                 href={routes.register.index.href()}
-                className="font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
               >
                 Create one
               </a>

@@ -8,15 +8,11 @@
 import { redirect } from 'remix/response/redirect'
 import type { Session } from 'remix/session'
 
-import { routes } from '../routes.ts'
+import { loginHref } from '../utils/login-href.ts'
 import { getAccessToken, readSessionFromRequest } from './session.ts'
 
 function loginRedirect(returnTo?: string): Response {
-  let href = routes.login.index.href()
-  if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
-    href += `?returnTo=${encodeURIComponent(returnTo)}`
-  }
-  return redirect(href, 303)
+  return redirect(loginHref({ returnTo }), 303)
 }
 
 /**

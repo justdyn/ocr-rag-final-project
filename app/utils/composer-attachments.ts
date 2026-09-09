@@ -13,6 +13,25 @@ export type ComposerAttachment = {
   error: string | null
   previewUrl?: string | null
   image?: boolean
+  /** Draft-only handle on the picked file — preview blob URLs come from this. */
+  file?: File | null
+}
+
+export type AttachmentKind = 'image' | 'pdf' | 'text' | 'other'
+
+export type AttachmentPreview = {
+  filename: string
+  kind: AttachmentKind
+  url: string
+  status: ComposerAttachmentStatus
+  error: string | null
+}
+
+/** Open-modal state while a previewable row is shown — null means do not open. */
+export type AttachmentPreviewState = {
+  localId: string
+  url: string
+  owned: boolean
 }
 
 export function isImageAttachmentName(filename: string): boolean {
@@ -34,6 +53,38 @@ export function previewUrlForFile(file: File): string | null {
 export function revokePreviewUrl(url: string | null | undefined): void {
   if (!url || typeof URL === 'undefined' || typeof URL.revokeObjectURL !== 'function') return
   URL.revokeObjectURL(url)
+}
+
+/** Preview class for a row — extension-based, mirrors isImageAttachmentName. */
+export function attachmentKind(row: Pick<ComposerAttachment, 'image' | 'filename'>): AttachmentKind {
+  if (row.image) return 'image'
+  let lower = row.filename.toLowerCase()
+  if (lower.endsWith('.pdf')) return 'pdf'
+  if (lower.endsWith('.txt') || lower.endsWith('.md')) return 'text'
+  return 'other'
+}
+
+/**
+ * URL the preview modal can render: the image blob URL created at pick time,
+ * else a fresh object URL from the retained draft file (pdf/text). Returns
+ * null when nothing previewable exists — callers must not open an empty modal.
+ */
+export function previewUrlForAttachment(row: ComposerAttachment): string | null {
+  if (row.previewUrl) return row.previewUrl
+  let kind = attachmentKind(row)
+  if (kind === 'other' || !row.file) return null
+  if (typeof URL === 'undefined' || typeof URL.createObjectURL !== 'function') return null
+  return URL.createObjectURL(row.file)
+}
+
+/**
+ * Preview-open gate: null when the row has no renderable URL — callers must
+ * not open the modal. `owned` marks blob URLs created here (revoked on close).
+ */
+export function previewStateForRow(row: ComposerAttachment): AttachmentPreviewState | null {
+  let url = previewUrlForAttachment(row)
+  if (!url) return null
+  return { localId: row.localId, url, owned: url !== row.previewUrl }
 }
 
 export function isTerminalAttachmentStatus(

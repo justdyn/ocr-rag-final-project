@@ -31,9 +31,17 @@ export default createController(routes.login, {
       let returnTo = safeReturnTo(url.searchParams.get('returnTo'), '')
       let flashError = session.get('flashError')
       let error = typeof flashError === 'string' ? flashError : undefined
+      // Splash is only for anonymous `/` → `?welcome=1`. Direct /login (register Sign in,
+      // logout, requireAuth) must show the form, not the overlay.
+      let showOnboarding =
+        url.searchParams.get('welcome') === '1' && !error && !returnTo
 
       return render(
-        <LoginPage error={error} returnTo={returnTo || undefined} />,
+        <LoginPage
+          error={error}
+          returnTo={returnTo || undefined}
+          showOnboarding={showOnboarding}
+        />,
       )
     },
 

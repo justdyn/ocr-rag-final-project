@@ -1,7 +1,8 @@
 import { createRouter, type MiddlewareContext } from 'remix/router'
-import { formData } from 'remix/middleware/form-data'
 import { session } from 'remix/middleware/session'
 import { staticFiles } from 'remix/middleware/static'
+
+import { uploadFormData } from './middleware/form-data.ts'
 
 import controller from './actions/controller.tsx'
 import filesController from './actions/files/controller.tsx'
@@ -15,7 +16,7 @@ import { routes } from './routes.ts'
 
 type AppContext = MiddlewareContext<
   [
-    ReturnType<typeof formData>,
+    ReturnType<typeof uploadFormData>,
     ReturnType<typeof session>,
     ReturnType<typeof render>,
   ]
@@ -30,7 +31,7 @@ declare module 'remix/router' {
 export const router = createRouter<AppContext>({
   middleware: [
     staticFiles('./public', { index: false }),
-    formData(),
+    uploadFormData(),
     session(sessionCookie, sessionStorage),
     render(),
   ],

@@ -43,7 +43,7 @@ export function FormField(handle: Handle<FormFieldProps>) {
       'aria-invalid': error ? ('true' as const) : undefined,
       'aria-describedby': describedBy,
       className:
-        'peer h-[52px] w-full rounded-full border border-border bg-surface px-5 pt-4 text-base text-foreground outline-none transition-[box-shadow,border-color] duration-200 ease-out-premium placeholder:text-transparent focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30',
+        'peer h-[52px] w-full rounded-full border border-border bg-surface px-5 pt-4 text-base text-foreground outline-none transition-[box-shadow,border-color] duration-200 ease-out-premium placeholder:text-transparent focus-visible:border-foreground focus-visible:ring-2 focus-visible:ring-foreground/30',
     }
 
     return (

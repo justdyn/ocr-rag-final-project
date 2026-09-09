@@ -11,13 +11,16 @@ import { SHELL_LUCIDE_ICON } from '../utils/chat-shell-icons.ts'
 import { newChatLocalId } from '../utils/chat-stream-client.ts'
 import {
   asAttachmentStatus,
+  attachmentKind,
   isActiveAttachmentStatus,
   isImageAttachment,
   isUnpersistedUpload,
+  previewStateForRow,
   previewUrlForFile,
   readyAttachmentFileIds,
   revokePreviewUrl,
-  summarizeAttachments,
+  type AttachmentPreview,
+  type AttachmentPreviewState,
   type ComposerAttachment,
 } from '../utils/composer-attachments.ts'
 import {
@@ -35,6 +38,7 @@ import { bindFilesToChatKnowledge } from '../utils/implicit-knowledge.ts'
 import { animatePress } from '../utils/motion.ts'
 import { createProgressThrottle } from '../utils/upload-progress.ts'
 import { LucideIcon } from './chat-shell/lucide-icon.tsx'
+import { ComposerAttachmentPreview } from './chat-shell/composer-attachment-preview.tsx'
 import { ComposerAttachmentStrip } from './chat-shell/composer-attachment-strip.tsx'
 import {
   composerActionsStyle,
@@ -66,9 +70,12 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
   let abortUploadByLocalId = new Map<string, () => void>()
   let stripTick: (() => void) | null = null
   let addedFileIds = new Set<string>()
+  // Click-to-preview: which row is open, its (possibly lazy) blob URL, and who opened it.
+  let previewState: AttachmentPreviewState | null = null
+  let previewOpener: HTMLElement | null = null
   let sessionKnowledgeId: string | null = handle.props.knowledgeId
   let sessionKnowledgeName: string | null = handle.props.knowledgeName
-  let uploadNotice: { tone: 'error' | 'info'; text: string } | null = null
+  let uploadNotice: { tone: 'error'; text: string } | null = null
   let bindInFlight = false
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let lastReset = handle.props.resetGeneration
@@ -102,13 +109,39 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
 
   /** Unmount the unsent strip after send — do not DELETE; files stay on the chat KB. */
   function releaseDraftStrip() {
+    closePreview()
     revokeAllPreviews()
     attachments = []
     progressById = new Map()
     uploadNotice = null
   }
 
+  function openPreview(localId: string) {
+    let row = attachments.find((item) => item.localId === localId)
+    if (!row) return
+    let next = previewStateForRow(row)
+    if (!next) return
+    previewOpener =
+      typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null
+    previewState = next
+    handle.update()
+  }
+
+  function closePreview() {
+    let state = previewState
+    if (!state) return
+    previewState = null
+    if (state.owned) revokePreviewUrl(state.url)
+    handle.update()
+    let opener = previewOpener
+    previewOpener = null
+    if (opener && typeof document !== 'undefined' && opener.isConnected) {
+      handle.queueTask(() => opener.focus())
+    }
+  }
+
   function removeDraftAttachment(localId: string) {
+    if (previewState?.localId === localId) closePreview()
     let row = attachments.find((item) => item.localId === localId)
     if (!row) return
 
@@ -135,6 +168,7 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
   handle.signal.addEventListener('abort', () => {
     stopPoll()
     abortAllUploads()
+    closePreview()
     revokeAllPreviews()
   })
 
@@ -207,12 +241,6 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
     for (let id of readyIds) addedFileIds.add(id)
     sessionKnowledgeId = result.id
     sessionKnowledgeName = result.name
-    uploadNotice = {
-      tone: 'info',
-      text: result.created
-        ? `Created “${result.name}” and attached ${readyIds.length === 1 ? 'the file' : `${readyIds.length} files`}. You can ask a question now.`
-        : `Added ${readyIds.length === 1 ? 'the file' : `${readyIds.length} files`} to “${result.name}”.`,
-    }
     handle.props.onScopeReady(result.id, result.name)
     handle.update()
   }
@@ -250,7 +278,6 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
       return
     }
     if (files.length === 0) return
-    uploadNotice = { tone: 'info', text: `Uploading ${files.length === 1 ? files[0]!.name : `${files.length} files`}…` }
 
     let queued: { file: File; localId: string }[] = []
     for (let file of files) {
@@ -266,6 +293,7 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
           error: rejection,
           previewUrl: rejection ? null : previewUrlForFile(file),
           image: isImageAttachment(file),
+          file,
         },
       ]
       if (!rejection) queued.push({ file, localId })
@@ -277,10 +305,6 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
     await mapPool(queued, COMPOSER_UPLOAD_CONCURRENCY, ({ file, localId }) =>
       uploadQueued(file, localId),
     )
-    uploadNotice = {
-      tone: 'info',
-      text: summarizeAttachments(attachments) || 'Upload finished.',
-    }
     handle.update()
     startPoll()
     await maybeBindKnowledge()
@@ -289,6 +313,7 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
   function resetComposer() {
     stopPoll()
     abortAllUploads()
+    closePreview()
     revokeAllPreviews()
     draft = ''
     attachments = []
@@ -312,6 +337,20 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
 
     let uploading = attachments.some((row) => row.status === 'uploading')
     let attachPending = attachments.some((row) => isActiveAttachmentStatus(row.status))
+
+    // Preview view derives from the live row so status changes reflect while open.
+    let ps = previewState
+    let previewRow = ps ? attachments.find((item) => item.localId === ps.localId) : null
+    let previewView: AttachmentPreview | null =
+      ps && previewRow
+        ? {
+            filename: previewRow.filename,
+            kind: attachmentKind(previewRow),
+            url: ps.url,
+            status: previewRow.status,
+            error: previewRow.error,
+          }
+        : null
 
     return (
       <section mix={composerSectionStyle} aria-label="Message composer">
@@ -340,6 +379,7 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
               progressOf={progressOf}
               bindTick={bindStripTick}
               onRemove={removeDraftAttachment}
+              onPreview={openPreview}
             />
           ) : null}
           <form
@@ -419,13 +459,11 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
           </form>
         </div>
         {uploadNotice ? (
-          <p
-            mix={composerFeedbackStyle}
-            role={uploadNotice.tone === 'error' ? 'alert' : 'status'}
-          >
+          <p mix={composerFeedbackStyle} role="alert">
             {uploadNotice.text}
           </p>
         ) : null}
+        <ComposerAttachmentPreview preview={previewView} onClose={closePreview} />
       </section>
     )
   }

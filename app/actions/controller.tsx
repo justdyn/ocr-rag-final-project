@@ -7,6 +7,7 @@ import { logoutUser } from '../data/auth.ts'
 import { getAccessToken, clearAccessToken } from '../middleware/session.ts'
 import { HomePage } from './home-page.tsx'
 import { routes } from '../routes.ts'
+import { loginHref } from '../utils/login-href.ts'
 
 export default createController(routes, {
   actions: {
@@ -19,7 +20,8 @@ export default createController(routes, {
     async home({ session, render, request }) {
       let token = getAccessToken(session)
       if (!token) {
-        return render(<HomePage authenticated={false} activeNav="chat" />)
+        // Anonymous home is the onboarding splash (`?welcome=1`). Direct /login is the form.
+        return redirect(loginHref({ welcome: true }), 303)
       }
 
       let url = new URL(request.url)
@@ -49,7 +51,7 @@ export default createController(routes, {
     async logout({ session }) {
       await logoutUser()
       clearAccessToken(session)
-      return redirect(routes.home.href(), 303)
+      return redirect(loginHref(), 303)
     },
   },
 })

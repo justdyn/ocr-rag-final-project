@@ -10,6 +10,7 @@ import { email as emailCheck, maxLength, minLength } from 'remix/data-schema/che
 import { loginUser, registerUser } from '../../data/auth.ts'
 import { getAccessToken, setAccessToken } from '../../middleware/session.ts'
 import { routes } from '../../routes.ts'
+import { loginHref } from '../../utils/login-href.ts'
 import { RegisterPage } from './register-page.tsx'
 
 let registerSchema = f.object({
@@ -73,7 +74,7 @@ export default createController(routes.register, {
       let loggedIn = await loginUser({ email, password })
       if (!loggedIn.ok) {
         session.flash('flashError', 'Account created. Please sign in.')
-        return redirect(routes.login.index.href(), 303)
+        return redirect(loginHref(), 303)
       }
 
       setAccessToken(session, loggedIn.data.access_token)

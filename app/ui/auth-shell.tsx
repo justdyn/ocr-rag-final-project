@@ -17,7 +17,7 @@ export function AuthShell(handle: Handle<AuthShellProps>) {
     let { title, subtitle, children, footer, error } = handle.props
 
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <main className="flex min-h-screen items-center justify-center bg-surface px-4 py-12">
         <div className="w-full max-w-md">
           <p className="mb-8 text-center font-display text-display font-semibold tracking-tight text-foreground">
             DocIntel
@@ -49,4 +49,4 @@ export function AuthShell(handle: Handle<AuthShellProps>) {
 
 /** Shared primary submit button classes for auth forms. */
 export const authSubmitClassName =
-  'inline-flex h-[52px] w-full items-center justify-center rounded-full bg-accent px-6 text-sm font-medium text-accent-foreground transition-opacity duration-200 ease-out-premium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60'
+  'inline-flex h-[52px] w-full items-center justify-center rounded-full bg-foreground px-6 text-sm font-medium text-surface transition-opacity duration-200 ease-out-premium hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-60'

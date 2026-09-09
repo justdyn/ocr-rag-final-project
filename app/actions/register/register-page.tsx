@@ -4,6 +4,7 @@
 import type { Handle } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
+import { loginHref } from '../../utils/login-href.ts'
 import { AuthShell, authSubmitClassName } from '../../ui/auth-shell.tsx'
 import { Document } from '../../ui/document.tsx'
 import { FormField } from '../../ui/form-field.tsx'
@@ -34,8 +35,8 @@ export function RegisterPage(handle: Handle<RegisterPageProps>) {
             <>
               Already registered?{' '}
               <a
-                href={routes.login.index.href()}
-                className="font-medium text-accent underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                href={loginHref()}
+                className="font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground"
               >
                 Sign in
               </a>

@@ -16,6 +16,7 @@ import {
   composerAttachStripStyle,
   composerThumbIconWrapStyle,
   composerThumbImgStyle,
+  composerThumbOpenStyle,
   composerThumbOverlayStyle,
   composerThumbRemoveStyle,
   composerThumbStyle,
@@ -28,6 +29,7 @@ export type ComposerAttachmentStripProps = {
   progressOf: (localId: string) => AttachmentProgress
   bindTick: (tick: (() => void) | null) => void
   onRemove: (localId: string) => void
+  onPreview: (localId: string) => void
 }
 
 function thumbLabel(row: ComposerAttachment): string {
@@ -55,7 +57,7 @@ export function ComposerAttachmentStrip(handle: Handle<ComposerAttachmentStripPr
         {rows.map((row) => {
           let progress = handle.props.progressOf(row.localId)
           let showRing = isActiveAttachmentStatus(row.status)
-          let indeterminate = row.status !== 'uploading' || progress == null
+          let indeterminate = row.status !== 'uploading'
           let fraction = progress ?? 0
           let percent = Math.round(fraction * 100)
           return (
@@ -67,13 +69,23 @@ export function ComposerAttachmentStrip(handle: Handle<ComposerAttachmentStripPr
               data-filename={row.filename}
             >
               <span className="sr-only">{thumbLabel(row)}</span>
-              {row.image && row.previewUrl ? (
-                <img src={row.previewUrl} alt="" mix={composerThumbImgStyle} />
-              ) : (
-                <span mix={composerThumbIconWrapStyle} aria-hidden="true">
-                  <LucideIcon icon={SHELL_LUCIDE_ICON.file} size={22} strokeWidth={1.75} />
-                </span>
-              )}
+              <button
+                type="button"
+                data-thumb-open=""
+                aria-label={`Preview ${row.filename}`}
+                mix={[
+                  composerThumbOpenStyle,
+                  on('click', () => handle.props.onPreview(row.localId)),
+                ]}
+              >
+                {row.image && row.previewUrl ? (
+                  <img src={row.previewUrl} alt="" mix={composerThumbImgStyle} />
+                ) : (
+                  <span mix={composerThumbIconWrapStyle} aria-hidden="true">
+                    <LucideIcon icon={SHELL_LUCIDE_ICON.file} size={22} strokeWidth={1.75} />
+                  </span>
+                )}
+              </button>
               {showRing ? (
                 <div
                   mix={composerThumbOverlayStyle}

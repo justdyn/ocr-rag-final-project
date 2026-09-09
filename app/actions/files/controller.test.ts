@@ -180,6 +180,67 @@ describe('files BFF (no library page)', () => {
     assert.equal(json.error, 'file_content_mismatch')
   })
 
+  it('POST /files/upload accepts a 3 MiB file (was 500 under the 2 MiB parser default)', async () => {
+    fileStore = []
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let body = new FormData()
+    body.append(
+      'file',
+      new File([new Uint8Array(3 * 1024 * 1024)], 'corpus.txt', { type: 'text/plain' }),
+    )
+
+    let response = await router.fetch(
+      new Request('http://localhost/files/upload', {
+        method: 'POST',
+        headers: { Cookie: cookie, Accept: 'application/json' },
+        body,
+      }),
+    )
+    assert.equal(response.status, 201)
+    assert.equal(fileStore.length, 1)
+  })
+
+  it('POST /files/upload answers oversize multipart with 413 JSON, not a 500', async () => {
+    fileStore = []
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let body = new FormData()
+    body.append(
+      'file',
+      new File([new Uint8Array(26 * 1024 * 1024)], 'huge.txt', { type: 'text/plain' }),
+    )
+
+    let response = await router.fetch(
+      new Request('http://localhost/files/upload', {
+        method: 'POST',
+        headers: { Cookie: cookie, Accept: 'application/json' },
+        body,
+      }),
+    )
+    assert.equal(response.status, 413)
+    let json = (await response.json()) as { error: string }
+    assert.match(json.error, /25 MiB/)
+    assert.equal(fileStore.length, 0)
+  })
+
+  it('POST /files/upload rejects a zero-byte file locally as 400', async () => {
+    fileStore = []
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let body = new FormData()
+    body.append('file', new File([], 'empty.txt', { type: 'text/plain' }))
+
+    let response = await router.fetch(
+      new Request('http://localhost/files/upload', {
+        method: 'POST',
+        headers: { Cookie: cookie, Accept: 'application/json' },
+        body,
+      }),
+    )
+    assert.equal(response.status, 400)
+    let json = (await response.json()) as { error: string }
+    assert.match(json.error, /empty/i)
+    assert.equal(fileStore.length, 0)
+  })
+
   it('GET /files/:id/status returns OCR failure detail', async () => {
     fileStore = [
       {

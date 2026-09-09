@@ -1,12 +1,30 @@
+# documents
 .docs
+
+# agents
 .cursor
 .claude
 .agents
 AGENTS.md
+CLAUDE.md
+
+# node
 node_modules/
 db/*.sqlite
 tmp/
+
+# scripts
+scripts
+
+# system
 .DS_Store
+
+# version-manager
 .nvmrc
 .python-version
+
+# skills
 skills-lock.json
+
+# graphify
+graphify-out

@@ -14,7 +14,7 @@ import {
 } from '../../data/files.ts'
 import { requireAuthFromSession } from '../../middleware/require-auth.ts'
 import { routes } from '../../routes.ts'
-import { validateClientUpload } from '../../utils/file-errors.ts'
+import { MAX_UPLOAD_BYTES, validateClientUpload } from '../../utils/file-errors.ts'
 
 function asUploadFile(value: FormDataEntryValue | null): File | null {
   if (value == null || typeof value === 'string') return null
@@ -44,7 +44,11 @@ export default createController(routes.files, {
       }
       let rejection = validateClientUpload(file)
       if (rejection) {
-        return Response.json({ error: rejection }, { status: 400 })
+        // Oversize matches FastAPI's 413; everything else stays 400.
+        return Response.json(
+          { error: rejection },
+          { status: file.size > MAX_UPLOAD_BYTES ? 413 : 400 },
+        )
       }
 
       try {

@@ -5,10 +5,12 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 
+import { nextSlideIndex } from './slide-show.tsx'
 import { requireAuth } from '../../middleware/require-auth.ts'
 import { ACCESS_TOKEN_KEY, sessionCookie, sessionStorage } from '../../middleware/session.ts'
 import { router } from '../../router.ts'
 import { routes } from '../../routes.ts'
+import { loginHref } from '../../utils/login-href.ts'
 
 const MOCK_TOKEN = 'mock.jwt.token.for.tests'
 const MOCK_USER = {
@@ -75,6 +77,10 @@ before(() => {
       return new Response(null, { status: 204 })
     }
 
+    if (url.endsWith('/api/auth/me') && method === 'GET') {
+      return Response.json({ ...MOCK_USER }, { status: 200 })
+    }
+
     return new Response('unexpected fetch in test', { status: 500 })
   }) as typeof fetch
 })
@@ -89,8 +95,53 @@ describe('Phase 7 Step 1 auth BFF', () => {
     assert.equal(response.status, 200)
     let html = await response.text()
     assert.match(html, /Sign in/)
+    assert.match(html, /Get started/)
+    assert.match(html, /data-show="false"/)
+    assert.match(html, /\[data-show="false"\]/)
     assert.doesNotMatch(html, /access_token/)
     assert.doesNotMatch(html, /mock\.jwt/)
+  })
+
+  it('GET /login?welcome=1 shows the onboarding splash over the form', async () => {
+    let response = await router.fetch(new Request('http://localhost/login?welcome=1'))
+    assert.equal(response.status, 200)
+    let html = await response.text()
+    assert.match(html, /Sign in/)
+    assert.match(html, /data-show="true"/)
+  })
+
+  it('GET /register Sign in links to /login without the splash query', async () => {
+    let response = await router.fetch(new Request('http://localhost/register'))
+    assert.equal(response.status, 200)
+    let html = await response.text()
+    assert.match(html, /href="\/login"/)
+    assert.doesNotMatch(html, /href="\/login\?welcome/)
+    assert.match(html, /Sign in/)
+  })
+
+  it('GET / redirects anonymous users to the login splash', async () => {
+    let response = await router.fetch(new Request('http://localhost/'))
+    assert.equal(response.status, 303)
+    assert.equal(response.headers.get('Location'), loginHref({ welcome: true }))
+  })
+
+  it('GET / serves the chat shell for an authenticated session', async () => {
+    let login = await router.fetch(
+      new Request('http://localhost/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          email: 'ada@example.com',
+          password: 'password123',
+        }),
+      }),
+    )
+    let cookieHeader = setCookieFromResponse(login)
+
+    let response = await router.fetch(
+      new Request('http://localhost/', { headers: { Cookie: cookieHeader } }),
+    )
+    assert.equal(response.status, 200)
   })
 
   it('POST /login sets an httpOnly session cookie and never embeds the JWT in HTML', async () => {
@@ -187,6 +238,7 @@ describe('Phase 7 Step 1 auth BFF', () => {
       }),
     )
     assert.equal(logout.status, 303)
+    assert.equal(logout.headers.get('Location'), loginHref())
 
     let afterCookie = setCookieFromResponse(logout)
     let token = await readTokenFromCookieHeader(afterCookie)
@@ -206,7 +258,17 @@ describe('Phase 7 Step 1 auth BFF', () => {
     assert.equal(auth.status, 303)
     assert.equal(
       auth.headers.get('Location'),
-      `${routes.login.index.href()}?returnTo=${encodeURIComponent('/files')}`,
+      loginHref({ returnTo: '/files' }),
     )
+  })
+})
+
+describe('slideshow index wrap', () => {
+  it('cycles every image with no off-by-one', () => {
+    // Literal expected values, not recomputed — guards the OWUI `% (length - 1)` bug.
+    assert.equal(nextSlideIndex(0, 4), 1)
+    assert.equal(nextSlideIndex(1, 4), 2)
+    assert.equal(nextSlideIndex(2, 4), 3)
+    assert.equal(nextSlideIndex(3, 4), 0)
   })
 })

@@ -19,7 +19,17 @@ from app.models.knowledge import KnowledgeFile
 from app.services.chroma_store import delete_file_collection
 from app.services.knowledge import invalidate_caches_for_file
 
-SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".md", ".png", ".jpg", ".jpeg"}
+SUPPORTED_EXTENSIONS = {
+    ".pdf",
+    ".txt",
+    ".md",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".docx",
+    ".pptx",
+    ".xlsx",
+}
 
 MIME_BY_EXTENSION = {
     ".pdf": "application/pdf",
@@ -28,12 +38,18 @@ MIME_BY_EXTENSION = {
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 }
 
 # Stdlib magic-byte sniffing — no python-magic. Not an antivirus scan.
 PDF_MAGIC = b"%PDF-"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 JPEG_MAGIC = b"\xff\xd8\xff"
+# OOXML (.docx/.pptx/.xlsx) are ZIP containers; the empty-archive and
+# spanned-set markers are also ZIP and must not fall through to "text".
+ZIP_MAGICS = (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")
 
 KIND_BY_EXTENSION = {
     ".pdf": "pdf",
@@ -42,6 +58,9 @@ KIND_BY_EXTENSION = {
     ".jpeg": "jpeg",
     ".txt": "text",
     ".md": "text",
+    ".docx": "ooxml",
+    ".pptx": "ooxml",
+    ".xlsx": "ooxml",
 }
 
 
@@ -67,6 +86,8 @@ def sniff_content_kind(data: bytes) -> str | None:
         return "png"
     if data.startswith(JPEG_MAGIC):
         return "jpeg"
+    if any(data.startswith(magic) for magic in ZIP_MAGICS):
+        return "zip"
     return None
 
 
@@ -74,7 +95,9 @@ def content_matches_extension(data: bytes, extension: str) -> bool:
     """True when sniffed bytes agree with the declared extension.
 
     Text/markdown have no required magic; they are rejected if they look like
-    PDF/PNG/JPEG. Image/PDF extensions must match their signatures.
+    PDF/PNG/JPEG/ZIP. Image/PDF extensions must match their signatures.
+    OOXML (.docx/.pptx/.xlsx) are ZIP containers, so expected "ooxml"
+    matches sniffed "zip".
     """
     expected = KIND_BY_EXTENSION.get(extension)
     if expected is None:
@@ -82,6 +105,8 @@ def content_matches_extension(data: bytes, extension: str) -> bool:
     sniffed = sniff_content_kind(data)
     if expected == "text":
         return sniffed is None
+    if expected == "ooxml":
+        return sniffed == "zip"
     return sniffed == expected
 
 

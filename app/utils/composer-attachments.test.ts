@@ -2,9 +2,13 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
+  attachmentKind,
   isImageAttachment,
   isImageAttachmentName,
   isUnpersistedUpload,
+  previewStateForRow,
+  previewUrlForAttachment,
+  revokePreviewUrl,
 } from './composer-attachments.ts'
 
 describe('isImageAttachmentName', () => {
@@ -20,6 +24,92 @@ describe('isImageAttachment', () => {
   it('accepts image MIME even when the name is odd', () => {
     assert.equal(isImageAttachment({ name: 'blob', type: 'image/png' }), true)
     assert.equal(isImageAttachment({ name: 'notes.txt', type: 'text/plain' }), false)
+  })
+})
+
+describe('attachmentKind', () => {
+  it('maps by image flag then extension', () => {
+    assert.equal(attachmentKind({ image: true, filename: 'x.bin' }), 'image')
+    assert.equal(attachmentKind({ image: false, filename: 'paper.PDF' }), 'pdf')
+    assert.equal(attachmentKind({ image: false, filename: 'notes.txt' }), 'text')
+    assert.equal(attachmentKind({ image: false, filename: 'readme.md' }), 'text')
+    assert.equal(attachmentKind({ image: false, filename: 'blob' }), 'other')
+  })
+})
+
+describe('previewUrlForAttachment', () => {
+  it('prefers the pick-time image blob URL', () => {
+    assert.equal(
+      previewUrlForAttachment({
+        localId: 'a',
+        filename: 'p.png',
+        fileId: null,
+        status: 'ready',
+        error: null,
+        previewUrl: 'blob:p',
+        image: true,
+      }),
+      'blob:p',
+    )
+  })
+
+  it('returns null when no URL and no draft file (no empty modal)', () => {
+    assert.equal(
+      previewUrlForAttachment({
+        localId: 'b',
+        filename: 'paper.pdf',
+        fileId: 'file-1',
+        status: 'ready',
+        error: null,
+      }),
+      null,
+    )
+  })
+})
+
+describe('previewStateForRow', () => {
+  it('is null when the row has no renderable URL (gate closed)', () => {
+    assert.equal(
+      previewStateForRow({
+        localId: 'b',
+        filename: 'paper.pdf',
+        fileId: 'file-1',
+        status: 'ready',
+        error: null,
+      }),
+      null,
+    )
+  })
+
+  it('reuses the pick-time image blob URL without owning it', () => {
+    assert.deepEqual(
+      previewStateForRow({
+        localId: 'a',
+        filename: 'p.png',
+        fileId: null,
+        status: 'ready',
+        error: null,
+        previewUrl: 'blob:p',
+        image: true,
+      }),
+      { localId: 'a', url: 'blob:p', owned: false },
+    )
+  })
+
+  it('mints an owned blob URL from the retained draft file', () => {
+    let file = new File(['%PDF-1.4 test pdf'], 'paper.pdf', { type: 'application/pdf' })
+    let state = previewStateForRow({
+      localId: 'c',
+      filename: 'paper.pdf',
+      fileId: 'file-1',
+      status: 'ready',
+      error: null,
+      file,
+    })
+    assert.ok(state)
+    assert.match(state.url, /^blob:/)
+    assert.equal(state.owned, true)
+    revokePreviewUrl(state.url)
   })
 })
 

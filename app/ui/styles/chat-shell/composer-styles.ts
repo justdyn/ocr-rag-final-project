@@ -13,6 +13,7 @@ export const composerPillStyle = css({
   flexDirection: 'column',
   width: '100%',
   borderRadius: '28px',
+  overflow: 'hidden',
   background: 'var(--home-bg)',
   boxShadow:
     '0 0 1px rgba(0, 0, 0, 0.62), 0 3px 6px rgba(0, 0, 0, 0.04), 0 4px 80px 8px rgba(0, 0, 0, 0.04)',
@@ -192,4 +193,124 @@ export const composerThumbRemoveStyle = css({
     outline: '2px solid #ffffff',
     outlineOffset: '1px',
   },
+})
+
+/** Click-to-preview target — fills the thumb behind the hover-revealed remove X. */
+export const composerThumbOpenStyle = css({
+  appearance: 'none',
+  display: 'block',
+  width: '100%',
+  height: '100%',
+  margin: 0,
+  padding: 0,
+  border: 0,
+  background: 'transparent',
+  cursor: 'pointer',
+  font: 'inherit',
+  '&:focus-visible': {
+    outline: '2px solid var(--home-fg)',
+    outlineOffset: '1px',
+  },
+})
+
+/**
+ * Preview lightbox. popover="auto" gives top layer + Escape/outside-click light dismiss.
+ * Centering lives under &:popover-open — an unconditional author `display` would
+ * override the UA's closed-popover display:none and blanket the page with the backdrop.
+ */
+export const composerPreviewBackdropStyle = css({
+  position: 'fixed',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  margin: 0,
+  border: 0,
+  padding: 0,
+  overflow: 'hidden',
+  background: 'rgba(13, 13, 13, 0.55)',
+  '&:popover-open': {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  '&::backdrop': { background: 'transparent' },
+})
+
+export const composerPreviewPanelStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  width: 'min(920px, calc(100vw - 32px))',
+  height: 'min(82vh, 720px)',
+  borderRadius: '16px',
+  border: '1px solid var(--home-border-strong)',
+  background: 'var(--home-bg)',
+  overflow: 'hidden',
+  boxShadow: '0 24px 64px rgba(0, 0, 0, 0.28)',
+})
+
+export const composerPreviewHeaderStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  padding: '10px 12px',
+  borderBottom: '1px solid var(--home-border)',
+  flexShrink: 0,
+})
+
+export const composerPreviewTitleStyle = css({
+  flex: 1,
+  minWidth: 0,
+  margin: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  fontSize: '13px',
+  lineHeight: '18px',
+  color: 'var(--home-fg)',
+})
+
+export const composerPreviewCloseStyle = css({
+  appearance: 'none',
+  width: '24px',
+  height: '24px',
+  margin: 0,
+  padding: 0,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: 0,
+  borderRadius: '9999px',
+  background: 'rgba(13, 13, 13, 0.78)',
+  color: '#ffffff',
+  cursor: 'pointer',
+  flexShrink: 0,
+  '&:focus-visible': {
+    outline: '2px solid var(--home-fg)',
+    outlineOffset: '1px',
+  },
+})
+
+export const composerPreviewBodyStyle = css({
+  flex: 1,
+  minHeight: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: 'var(--home-surface)',
+  overflow: 'hidden',
+})
+
+export const composerPreviewImgStyle = css({
+  display: 'block',
+  maxWidth: '100%',
+  maxHeight: '100%',
+  objectFit: 'contain',
+})
+
+/** Native viewer chrome (zoom/download for PDFs, text for txt/md) comes free. */
+export const composerPreviewFrameStyle = css({
+  width: '100%',
+  height: '100%',
+  border: 0,
+  background: '#ffffff',
 })
