@@ -35,6 +35,40 @@ export function entranceFast() {
   })
 }
 
+/**
+ * User-turn pill entrance — slides in from slightly right + down with a small
+ * scale-up (ChatGPT-style thread, §5.2 preset; snappy = no overshoot on text).
+ */
+export function entranceUserBubble() {
+  if (prefersReducedMotion()) {
+    return animateEntrance({ opacity: 0, duration: 80 })
+  }
+  return animateEntrance({
+    opacity: 0,
+    transform: 'translate(6px, 4px) scale(0.97)',
+    ...spring('snappy'),
+  })
+}
+
+/**
+ * Pin a nested scroller (the chat thread) to its bottom with a short tween.
+ * Lenis owns document scroll (§4.1) — nested overflow regions animate their own
+ * scrollTop via framer-motion/dom instead of raw jumps. Reduced motion = instant
+ * jump (§5.4). One animation per element: restart retargets from the current
+ * position during streaming instead of stacking competing tweens.
+ */
+let activeScrollAnims = new WeakMap<HTMLElement, { stop(): void }>()
+
+export function animateScrollBottom(el: HTMLElement): void {
+  if (prefersReducedMotion()) {
+    el.scrollTop = el.scrollHeight
+    return
+  }
+  activeScrollAnims.get(el)?.stop()
+  let controls = animate(el, { scrollTop: el.scrollHeight }, { duration: 0.2 })
+  activeScrollAnims.set(el, controls)
+}
+
 /** Short press scale via framer-motion/dom. */
 export function animatePress(el: Element): void {
   if (prefersReducedMotion()) return

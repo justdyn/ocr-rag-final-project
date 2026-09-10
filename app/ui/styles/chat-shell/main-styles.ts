@@ -204,7 +204,7 @@ export const legalLinkStyle = css({
 export const chatThreadStyle = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '12px',
+  gap: '24px',
   flex: '1 1 auto',
   minHeight: 0,
   width: '100%',

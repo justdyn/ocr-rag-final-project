@@ -24,6 +24,7 @@ import {
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import { chatShellScopeKey } from '../utils/chat-shell-scope.ts'
 import { shellChatHref } from '../utils/chat-shell-urls.ts'
+import { animateScrollBottom } from '../utils/motion.ts'
 import {
   chatErrorBannerCopy,
   cloneInitialMessages,
@@ -82,7 +83,7 @@ export const ChatShellMainPanel = clientEntry(
 
     function scrollToBottom() {
       handle.queueTask(() => {
-        if (listEl) listEl.scrollTop = listEl.scrollHeight
+        if (listEl) animateScrollBottom(listEl)
       })
     }
 
@@ -302,6 +303,9 @@ export const ChatShellMainPanel = clientEntry(
                       listEl = node as HTMLElement
                     }),
                   ]}
+                  // Nested scroller opts out of the root Lenis hijack (§4.3) —
+                  // Lenis would preventDefault wheel events aimed at this list.
+                  data-lenis-prevent=""
                   aria-live="polite"
                 >
                   {messages.map((message) => {

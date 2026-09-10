@@ -1,5 +1,6 @@
 /**
- * One chat bubble — citation-aware for assistant turns.
+ * One chat turn — ChatGPT-style conversation layout: right-aligned user pill,
+ * flush assistant prose (no card), citations inline on assistant turns.
  */
 import type { Handle } from 'remix/ui'
 
@@ -9,7 +10,15 @@ import {
   sourceByCitationId,
 } from '../utils/chat-citations.ts'
 import type { ChatMessage } from '../utils/chat-types.ts'
-import { entranceFast } from '../utils/motion.ts'
+import { entranceFast, entranceUserBubble } from '../utils/motion.ts'
+import {
+  assistantPendingStyle,
+  assistantProseStyle,
+  assistantRowStyle,
+  userPillStyle,
+  userRowStyle,
+  userTextStyle,
+} from './styles/chat-shell/message-styles.ts'
 
 export type ChatMessageBubbleProps = {
   message: ChatMessage
@@ -20,23 +29,22 @@ export type ChatMessageBubbleProps = {
 export function ChatMessageBubble(handle: Handle<ChatMessageBubbleProps>) {
   return () => {
     let { message, animateEntrance = false } = handle.props
-    let isUser = message.role === 'user'
-    let segments = isUser
-      ? ([{ type: 'text' as const, value: message.content }] as const)
-      : segmentCitedContent(message.content)
+
+    if (message.role === 'user') {
+      return (
+        <li mix={userRowStyle}>
+          <div mix={[userPillStyle, animateEntrance ? entranceUserBubble() : undefined]}>
+            <p mix={userTextStyle}>{message.content}</p>
+          </div>
+        </li>
+      )
+    }
+
+    let segments = segmentCitedContent(message.content)
 
     return (
-      <li
-        mix={animateEntrance ? entranceFast() : undefined}
-        className={`flex flex-col gap-2 rounded-lg border border-border p-4 ${
-          isUser ? 'bg-surface-muted' : 'bg-surface'
-        }`}
-      >
-        <span className="text-xs font-medium uppercase tracking-wide text-muted">
-          {isUser ? 'You' : 'Assistant'}
-          {message.incomplete ? ' · incomplete' : ''}
-        </span>
-        <div className="whitespace-pre-wrap text-sm text-foreground">
+      <li mix={[assistantRowStyle, animateEntrance ? entranceFast() : undefined]}>
+        <div mix={assistantProseStyle}>
           {segments.map((segment, index) => {
             if (segment.type === 'text') {
               return <span key={`t-${index}`}>{segment.value}</span>
@@ -49,8 +57,11 @@ export function ChatMessageBubble(handle: Handle<ChatMessageBubbleProps>) {
               />
             )
           })}
-          {!message.content && !isUser ? (
-            <span className="text-muted">Thinking…</span>
+          {!message.content ? (
+            <span mix={assistantPendingStyle}>Thinking…</span>
+          ) : null}
+          {message.incomplete ? (
+            <span className="sr-only"> (response incomplete)</span>
           ) : null}
         </div>
       </li>
