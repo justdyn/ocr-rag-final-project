@@ -3,6 +3,10 @@ import { del, form, get, post, route } from 'remix/routes'
 export const routes = route({
   assets: get('/assets/*path'),
   home: '/',
+  // Conversation identity — path param is canonical (not ?conversation=).
+  chat: route('chat', {
+    show: get(':conversationId'),
+  }),
   login: form('login'),
   register: form('register'),
   logout: post('logout'),

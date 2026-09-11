@@ -7,6 +7,7 @@ from app.models.file import File
 from app.models.knowledge import Knowledge, KnowledgeFile
 from app.models.message import Message
 from app.models.user import User
+from app.models.user_memory import UserMemory
 
 __all__ = [
     "Auth",
@@ -17,4 +18,5 @@ __all__ = [
     "KnowledgeFile",
     "Message",
     "User",
+    "UserMemory",
 ]

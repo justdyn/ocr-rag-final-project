@@ -127,6 +127,13 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
       typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null
     previewState = next
     handle.update()
+    // Show synchronously in this click turn — a queued show loses the
+    // popover="auto" light-dismiss race against the opening strip click.
+    document.getElementById('composer-attachment-preview')?.showPopover()
+    handle.queueTask(() => {
+      let closeBtn = document.querySelector('#composer-attachment-preview [data-preview-close]')
+      if (closeBtn instanceof HTMLElement) closeBtn.focus()
+    })
   }
 
   function closePreview() {

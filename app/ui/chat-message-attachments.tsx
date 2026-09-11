@@ -48,21 +48,9 @@ export function ChatMessageAttachments(handle: Handle<ChatMessageAttachmentsProp
   }
 
   return () => {
-    let want = openAttachment != null
-    if (want !== shown && dialogEl) {
-      shown = want
-      handle.queueTask(() => {
-        if (!dialogEl) return
-        if (want) {
-          dialogEl.showPopover()
-          let closeBtn = dialogEl.querySelector('[data-preview-close]')
-          if (closeBtn instanceof HTMLElement) closeBtn.focus()
-        } else {
-          dialogEl.hidePopover()
-        }
-      })
-    }
-
+    // Popover shown-state is driven by the thumb click + UA toggle events;
+    // render only mirrors content and aria-label. Opening from a queued task
+    // loses the popover="auto" light-dismiss race against the opening click.
     let row =
       handle.props.attachments.length > 0 ? (
         <ul mix={userAttachmentRowStyle} aria-label="Attached files">
@@ -76,6 +64,15 @@ export function ChatMessageAttachments(handle: Handle<ChatMessageAttachmentsProp
                   on('click', () => {
                     openAttachment = att
                     handle.update()
+                    if (!dialogEl) return
+                    // Show synchronously in this click turn; the panel content
+                    // (and the close button to focus) arrives with the rerender.
+                    dialogEl.showPopover()
+                    shown = true
+                    handle.queueTask(() => {
+                      let closeBtn = dialogEl?.querySelector('[data-preview-close]')
+                      if (closeBtn instanceof HTMLElement) closeBtn.focus()
+                    })
                   }),
                 ]}
               >
@@ -111,7 +108,8 @@ export function ChatMessageAttachments(handle: Handle<ChatMessageAttachmentsProp
             ref((node) => {
               dialogEl = node as HTMLDivElement
             }),
-            on('close', () => {
+            on('toggle', (event) => {
+              if ((event as Event & { newState: string }).newState !== 'closed') return
               shown = false
               openAttachment = null
               handle.update()

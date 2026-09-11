@@ -13,6 +13,7 @@ from app.models.conversation import Conversation
 from app.models.knowledge import Knowledge
 from app.models.message import Message
 from app.schemas.chat import (
+    ConversationSummary,
     KnowledgeConversationItem,
     LastConversationScope,
     MessageResponse,
@@ -95,6 +96,24 @@ async def get_last_conversation_scope(
     )
 
 
+async def get_conversation_for_user(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    conversation_id: str,
+) -> ConversationSummary | None:
+    """Owned conversation metadata (incl. nullable knowledge_id), or ``None``.
+
+    404-not-403 at the router: other users' threads must not leak.
+    """
+    convo = await db.scalar(
+        select(Conversation).where(Conversation.id == conversation_id)
+    )
+    if convo is None or convo.user_id != user_id:
+        return None
+    return ConversationSummary.model_validate(convo)
+
+
 async def list_messages_for_conversation(
     db: AsyncSession,
     *,
@@ -106,10 +125,10 @@ async def list_messages_for_conversation(
     Uses 404-not-403 semantics at the router: existence of other users' threads
     must not leak. Empty list is a valid owned conversation with no messages.
     """
-    convo = await db.scalar(
-        select(Conversation).where(Conversation.id == conversation_id)
+    convo = await get_conversation_for_user(
+        db, user_id=user_id, conversation_id=conversation_id
     )
-    if convo is None or convo.user_id != user_id:
+    if convo is None:
         return None
 
     rows = (

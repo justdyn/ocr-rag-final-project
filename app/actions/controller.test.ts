@@ -56,6 +56,10 @@ before(() => {
       return Response.json({ ...MOCK_USER }, { status: 200 })
     }
 
+    if (url.endsWith('/api/conversations/last') && method === 'GET') {
+      return Response.json(null)
+    }
+
     throw new Error(`Unexpected backend call in test: ${method} ${url}`)
   }) as typeof fetch
 })

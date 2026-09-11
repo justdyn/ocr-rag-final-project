@@ -13,6 +13,7 @@ Persistence policy:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 import uuid
@@ -33,6 +34,11 @@ from app.schemas.query import QueryChunkResult
 from app.services.llm.base import LLMConfigError, LLMProvider, LLMProviderError
 from app.services.llm.openai_compatible import get_llm_provider
 from app.services.llm.prompt import build_rag_messages
+from app.services.memory import (
+    retrieve_relevant_memories,
+    run_memory_extract,
+    should_schedule_memory_extract,
+)
 from app.services.retrieval.query import QueryServiceError, run_query
 
 ProviderFactory = Callable[[], LLMProvider]
@@ -53,6 +59,7 @@ class ChatPrepared:
     messages: list[dict[str, str]]
     sources: list[dict[str, Any]]
     query: str
+    user_id: str
 
 
 def _title_from_query(query: str) -> str:
@@ -230,7 +237,15 @@ async def prepare_chat(
         query=query,
     )
     history = await _load_history(db, conversation_id=convo.id)
-    bundle = build_rag_messages(user_query=query, chunks=chunks, history=history)
+    memory_facts: list[str] | None = None
+    if settings.user_memory_enabled:
+        # retrieve_relevant_memories never raises — embedding/DB failure degrades
+        # to [] so the chat still streams.
+        facts = await retrieve_relevant_memories(db, user_id=user_id, query=query)
+        memory_facts = [fact.content for fact in facts]
+    bundle = build_rag_messages(
+        user_query=query, chunks=chunks, history=history, memory_facts=memory_facts
+    )
     # Same list is emitted on SSE `sources`, non-streaming JSON, and message.sources.
     sources = await _enrich_source_filenames(db, bundle.sources)
     attachments = await _resolve_message_attachments(
@@ -257,6 +272,7 @@ async def prepare_chat(
         messages=bundle.messages,
         sources=sources,
         query=query,
+        user_id=user_id,
     )
     return prepared, provider
 
@@ -301,6 +317,43 @@ async def persist_assistant_message(
 def format_sse(event: str, data: dict[str, Any]) -> str:
     """One SSE event frame (event name + JSON data)."""
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+_MEMORY_TASKS: set[asyncio.Task[None]] = set()
+
+
+def _schedule_memory_extract(
+    *,
+    prepared: ChatPrepared,
+    assistant_message_id: str,
+    assistant_text: str,
+    error_message: str | None,
+    provider: LLMProvider,
+) -> None:
+    """P1b: fire-and-forget post-turn user-memory extract (never awaited).
+
+    Runs only when the flag is on and the assistant turn was successful and
+    non-empty. Task keeps a reference until done so asyncio cannot GC it
+    mid-flight; copies of ids/strings only — no ORM objects, no session.
+    """
+    if not should_schedule_memory_extract(
+        enabled=get_settings().user_memory_enabled,
+        error_message=error_message,
+        assistant_text=assistant_text,
+    ):
+        return
+    task = asyncio.create_task(
+        run_memory_extract(
+            user_id=prepared.user_id,
+            conversation_id=prepared.conversation_id,
+            assistant_message_id=assistant_message_id,
+            user_text=prepared.query,
+            assistant_text=assistant_text,
+            provider=provider,
+        )
+    )
+    _MEMORY_TASKS.add(task)
+    task.add_done_callback(_MEMORY_TASKS.discard)
 
 
 async def stream_chat_events(
@@ -365,6 +418,14 @@ async def stream_chat_events(
         return
 
     assert assistant is not None
+    # P1b: scheduled before `done` but never awaited — the stream finishes first.
+    _schedule_memory_extract(
+        prepared=prepared,
+        assistant_message_id=assistant.id,
+        assistant_text=full_text,
+        error_message=error_message,
+        provider=provider,
+    )
     yield format_sse(
         "done",
         {
@@ -395,6 +456,14 @@ async def complete_chat_json(
         content=content,
         sources=prepared.sources,
         error=None,
+    )
+    # P1b: scheduled before return, never awaited.
+    _schedule_memory_extract(
+        prepared=prepared,
+        assistant_message_id=assistant.id,
+        assistant_text=content,
+        error_message=None,
+        provider=provider,
     )
     return ChatCompletionResponse(
         conversation_id=prepared.conversation_id,

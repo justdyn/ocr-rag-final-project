@@ -5,7 +5,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.core.config import get_settings
-from app.routers import auth, chat, conversations, files, health, knowledge, query
+from app.routers import (
+    auth,
+    chat,
+    conversations,
+    files,
+    health,
+    knowledge,
+    memory,
+    query,
+)
 
 
 @asynccontextmanager
@@ -27,6 +36,9 @@ def create_app() -> FastAPI:
     application.include_router(files.router)
     application.include_router(knowledge.router)
     application.include_router(conversations.router)
+    # P0 user-memory stub: mounted only when flagged on (off → prefix 404s).
+    if settings.user_memory_enabled:
+        application.include_router(memory.router)
     application.include_router(query.router)
     application.include_router(chat.router)
     return application

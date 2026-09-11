@@ -55,10 +55,12 @@ export type ChatStreamError = {
   detail: string
 }
 
-/** Lightweight conversation row from GET /api/knowledge/{id}/conversations. */
+/** Lightweight conversation row (KB list or GET /api/conversations/{id}). */
 export type ConversationSummary = {
   id: string
   title: string | null
+  /** Present on conversation-by-id; KB list rows omit it. */
+  knowledge_id?: string | null
   created_at: number
   updated_at: number
 }

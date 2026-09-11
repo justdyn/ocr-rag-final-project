@@ -65,6 +65,10 @@ class Settings(BaseModel):
     # How many retrieved chunks to inject into the chat prompt
     chat_retrieval_k: int = Field(default=5)
 
+    # User-memory P0 stub (architecture §11): owner CRUD only, default off.
+    # With the flag off, /api/memory routes are not mounted (404).
+    user_memory_enabled: bool = Field(default=False)
+
     def ensure_data_dirs(self) -> None:
         """Create local data directories if missing (dev-friendly)."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
@@ -120,6 +124,7 @@ def get_settings() -> Settings:
         ).rstrip("/"),
         llm_timeout_seconds=float(os.getenv("LLM_TIMEOUT_SECONDS", "120")),
         chat_retrieval_k=int(os.getenv("CHAT_RETRIEVAL_K", "5")),
+        user_memory_enabled=_env_bool("USER_MEMORY_ENABLED", False),
     )
     settings.ensure_data_dirs()
     return settings

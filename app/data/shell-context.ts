@@ -2,9 +2,10 @@
  * Server-side props for unified chat shell sidebar + chat landing (data/, §2.1).
  */
 import {
+  getConversation,
+  getConversationMessages,
   getLastConversationScope,
   listKnowledgeConversations,
-  loadKnowledgeChatHistory,
 } from './chat.ts'
 import { fetchCurrentUser } from './auth.ts'
 import { getKnowledge } from './knowledge.ts'
@@ -19,7 +20,7 @@ export type ChatShellServerContext = {
   knowledgeBases: ShellKnowledgeOption[]
   activeKnowledgeId: string | null
   activeKnowledgeName: string | null
-  /** Chat composer scope — only from `?knowledge=`, never auto-picked. */
+  /** Chat composer scope — from opened conversation's KB (or explicit preferred). */
   chatKnowledgeId: string | null
   chatKnowledgeName: string | null
   conversations: ConversationSummary[]
@@ -28,18 +29,19 @@ export type ChatShellServerContext = {
   /** From GET /api/auth/me — sidebar account avatar + label. */
   userName: string
   userEmail: string
+  /** preferredConversationId was set but missing/not owned → controller returns 404. */
+  conversationNotFound: boolean
 }
 
 /**
- * Hydrate shell chrome for authenticated routes: optional URL knowledge,
+ * Hydrate shell chrome for authenticated routes: optional conversation path,
  * sidebar conversations, and optional chat thread.
  *
- * Composer scope (`chatKnowledgeId`) only ever comes from `?knowledge=` —
- * never auto-picked. Without `?knowledge=`, the sidebar alone hydrates from
- * the user's last active knowledge (most recent conversation's KB) so the
+ * Composer scope (`chatKnowledgeId`) comes from the opened conversation's
+ * `knowledge_id` (or an explicit preferred knowledge id). Without a conversation,
+ * the sidebar alone hydrates from the user's last active knowledge so the
  * recent-chats list survives a full remount. Never the "first knowledge base"
- * from the KB listing, and never a fallback for an explicit but unresolvable
- * `?knowledge=`.
+ * from the KB listing.
  */
 export async function loadChatShellServerContext(
   accessToken: string,
@@ -52,8 +54,31 @@ export async function loadChatShellServerContext(
   let chatKnowledgeId: string | null = null
   let chatKnowledgeName: string | null = null
   let knowledgeBases: ShellKnowledgeOption[] = []
+  let activeConversationId: string | null = null
+  let initialMessages: PersistedMessage[] = []
+  let conversationMissing = false
 
-  if (opts.preferredKnowledgeId) {
+  if (opts.hydrateChat && opts.preferredConversationId) {
+    let summary = await getConversation(accessToken, opts.preferredConversationId)
+    if (!summary) {
+      conversationMissing = true
+    } else {
+      activeConversationId = summary.id
+      let messages = await getConversationMessages(accessToken, summary.id)
+      // Owned meta with a missing messages payload → empty thread (not 404).
+      initialMessages = messages ?? []
+      if (summary.knowledge_id) {
+        let record = await getKnowledge(accessToken, summary.knowledge_id).catch(
+          () => null,
+        )
+        if (record) {
+          chatKnowledgeId = record.id
+          chatKnowledgeName = record.name
+          knowledgeBases = [{ id: record.id, name: record.name }]
+        }
+      }
+    }
+  } else if (opts.preferredKnowledgeId) {
     let record = await getKnowledge(accessToken, opts.preferredKnowledgeId).catch(
       () => null,
     )
@@ -67,9 +92,9 @@ export async function loadChatShellServerContext(
   let activeKnowledgeId = chatKnowledgeId
   let activeKnowledgeName = chatKnowledgeName
 
-  // Sidebar-only hydrate: without `?knowledge=`, scope the recent-chats list
-  // to the user's last active knowledge. Composer scope stays null.
-  if (!opts.preferredKnowledgeId) {
+  // Sidebar-only hydrate: without an opened conversation / preferred KB, scope
+  // the recent-chats list to the user's last active knowledge. Composer stays null.
+  if (!opts.preferredConversationId && !opts.preferredKnowledgeId) {
     let last = await getLastConversationScope(accessToken).catch(() => null)
     if (last) {
       activeKnowledgeId = last.knowledgeId
@@ -78,8 +103,6 @@ export async function loadChatShellServerContext(
   }
 
   let conversations: ConversationSummary[] = []
-  let activeConversationId: string | null = null
-  let initialMessages: PersistedMessage[] = []
   let userName = ''
   let userEmail = ''
 
@@ -96,19 +119,6 @@ export async function loadChatShellServerContext(
     ).catch(() => [])
   }
 
-  if (opts.hydrateChat && chatKnowledgeId && opts.preferredConversationId) {
-    let history = await loadKnowledgeChatHistory(
-      accessToken,
-      chatKnowledgeId,
-      opts.preferredConversationId,
-    ).catch(() => ({
-      conversationId: null as string | null,
-      messages: [] as PersistedMessage[],
-    }))
-    activeConversationId = history.conversationId
-    initialMessages = history.messages
-  }
-
   return {
     knowledgeBases,
     activeKnowledgeId,
@@ -116,9 +126,10 @@ export async function loadChatShellServerContext(
     chatKnowledgeId,
     chatKnowledgeName,
     conversations,
-    activeConversationId,
-    initialMessages,
+    activeConversationId: conversationMissing ? null : activeConversationId,
+    initialMessages: conversationMissing ? [] : initialMessages,
     userName,
     userEmail,
+    conversationNotFound: conversationMissing,
   }
 }

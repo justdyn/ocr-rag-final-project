@@ -325,7 +325,7 @@ export const ChatSidebar = clientEntry(
                     {SHELL_COPY.conversations}
                   </p>
                   {conversations.map((row) => {
-                    let href = shellChatHref(knowledgeId, row.id)
+                    let href = shellChatHref(row.id)
                     let active = activeConversationId === row.id && activeNav === 'chat'
                     return (
                       <a

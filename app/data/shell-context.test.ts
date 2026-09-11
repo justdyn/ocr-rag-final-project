@@ -1,9 +1,9 @@
 /**
  * Shell scope contract:
- * - Composer scope (`chatKnowledgeId`) only from `?knowledge=` — never auto-picked.
+ * - Composer scope (`chatKnowledgeId`) from opened conversation's knowledge_id.
  * - Sidebar scope (`activeKnowledgeId`) hydrates from the user's last active
- *   knowledge (most recent conversation's KB) when no `?knowledge=` is set,
- *   so the recent-chats list survives a full remount (re-login / restart).
+ *   knowledge when no conversation/preferred KB is set, so the recent-chats
+ *   list survives a full remount (re-login / restart).
  * - Never picks "first knowledge base" from the KB listing.
  */
 import assert from 'node:assert/strict'
@@ -25,6 +25,7 @@ const LEGACY_KB = {
 const LEGACY_CONVERSATION = {
   id: 'conv-legacy',
   title: 'could you please the content from 4.jpg ?',
+  knowledge_id: LEGACY_KB.id,
   created_at: 2,
   updated_at: 2,
 }
@@ -71,6 +72,18 @@ before(() => {
       })
     }
 
+    if (
+      url.endsWith(`/api/conversations/${LEGACY_CONVERSATION.id}`) &&
+      method === 'GET' &&
+      !url.includes('/messages')
+    ) {
+      return Response.json(LEGACY_CONVERSATION)
+    }
+
+    if (url.match(/\/api\/conversations\/[^/]+$/) && method === 'GET') {
+      return Response.json({ detail: 'Conversation not found' }, { status: 404 })
+    }
+
     let kbMatch = url.match(/\/api\/knowledge\/([^/?]+)$/)
     if (kbMatch && method === 'GET' && !url.includes('/conversations')) {
       if (kbMatch[1] === LEGACY_KB.id) return Response.json(LEGACY_KB)
@@ -81,7 +94,14 @@ before(() => {
       url.endsWith(`/api/knowledge/${LEGACY_KB.id}/conversations`) &&
       method === 'GET'
     ) {
-      return Response.json([LEGACY_CONVERSATION])
+      return Response.json([
+        {
+          id: LEGACY_CONVERSATION.id,
+          title: LEGACY_CONVERSATION.title,
+          created_at: LEGACY_CONVERSATION.created_at,
+          updated_at: LEGACY_CONVERSATION.updated_at,
+        },
+      ])
     }
 
     if (
@@ -109,22 +129,21 @@ after(() => {
 })
 
 describe('loadChatShellServerContext', () => {
-  it('hydrates the sidebar from the last active knowledge when no ?knowledge= is set', async () => {
+  it('hydrates the sidebar from the last active knowledge when no conversation is open', async () => {
     lastScope = 'kb'
     requested = []
     let shell = await loadChatShellServerContext(TOKEN, { hydrateChat: true })
 
-    // Sidebar hydrates: recent-chats list survives a full remount.
     assert.equal(shell.activeKnowledgeId, LEGACY_KB.id)
     assert.equal(shell.activeKnowledgeName, LEGACY_KB.name)
     assert.equal(shell.conversations[0]?.id, LEGACY_CONVERSATION.id)
 
-    // Composer is never auto-scoped; no thread auto-opens; no KB listing.
     assert.equal(shell.chatKnowledgeId, null)
     assert.equal(shell.chatKnowledgeName, null)
     assert.deepEqual(shell.knowledgeBases, [])
     assert.equal(shell.activeConversationId, null)
     assert.deepEqual(shell.initialMessages, [])
+    assert.equal(shell.conversationNotFound, false)
     assert.equal(shell.userName, 'Oh Hyundo')
     assert.equal(shell.userEmail, 'oh@example.com')
     assert.equal(
@@ -151,6 +170,7 @@ describe('loadChatShellServerContext', () => {
     assert.deepEqual(shell.conversations, [])
     assert.equal(shell.activeConversationId, null)
     assert.deepEqual(shell.initialMessages, [])
+    assert.equal(shell.conversationNotFound, false)
     assert.equal(
       requested.some((row) => row.includes('/api/knowledge/')),
       false,
@@ -158,30 +178,49 @@ describe('loadChatShellServerContext', () => {
     )
   })
 
-  it('scopes sidebar and composer to the URL knowledge id only', async () => {
+  it('hydrates composer and messages from conversation id alone', async () => {
     lastScope = 'kb'
     requested = []
     let shell = await loadChatShellServerContext(TOKEN, {
-      preferredKnowledgeId: LEGACY_KB.id,
       preferredConversationId: LEGACY_CONVERSATION.id,
       hydrateChat: true,
     })
 
-    assert.equal(shell.activeKnowledgeId, LEGACY_KB.id)
-    assert.equal(shell.activeKnowledgeName, LEGACY_KB.name)
     assert.equal(shell.chatKnowledgeId, LEGACY_KB.id)
     assert.equal(shell.chatKnowledgeName, LEGACY_KB.name)
-    assert.equal(shell.conversations[0]?.id, LEGACY_CONVERSATION.id)
+    assert.equal(shell.activeKnowledgeId, LEGACY_KB.id)
     assert.equal(shell.activeConversationId, LEGACY_CONVERSATION.id)
     assert.equal(shell.initialMessages.length, 1)
+    assert.equal(shell.conversationNotFound, false)
+    assert.equal(
+      requested.some((row) =>
+        row.endsWith(`/api/conversations/${LEGACY_CONVERSATION.id}`),
+      ),
+      true,
+      'must resolve conversation metadata by id',
+    )
     assert.equal(
       requested.some((row) => row.includes('/api/conversations/last')),
       false,
-      'an explicit ?knowledge= needs no last-active lookup',
+      'opened conversation needs no last-active lookup',
     )
   })
 
-  it('ignores a preferred id that does not resolve to an owned knowledge base', async () => {
+  it('flags conversationNotFound when the id is missing or not owned', async () => {
+    lastScope = 'kb'
+    requested = []
+    let shell = await loadChatShellServerContext(TOKEN, {
+      preferredConversationId: 'conv-missing',
+      hydrateChat: true,
+    })
+
+    assert.equal(shell.conversationNotFound, true)
+    assert.equal(shell.activeConversationId, null)
+    assert.deepEqual(shell.initialMessages, [])
+    assert.equal(shell.chatKnowledgeId, null)
+  })
+
+  it('ignores a preferred knowledge id that does not resolve', async () => {
     lastScope = 'kb'
     requested = []
     let shell = await loadChatShellServerContext(TOKEN, {
@@ -192,6 +231,7 @@ describe('loadChatShellServerContext', () => {
     assert.equal(shell.activeKnowledgeId, null)
     assert.equal(shell.chatKnowledgeId, null)
     assert.deepEqual(shell.conversations, [])
+    assert.equal(shell.conversationNotFound, false)
     assert.equal(
       requested.some((row) => row.includes('/api/conversations/last')),
       false,

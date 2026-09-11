@@ -35,23 +35,20 @@ export function ComposerAttachmentPreview(handle: Handle<ComposerAttachmentPrevi
 
   return () => {
     let preview = handle.props.preview
+    // Opening is done synchronously by the composer's openPreview in the strip
+    // click turn (a queued show loses the popover="auto" light-dismiss race).
+    // This gate only hides when the composer clears the preview state.
     let want = preview != null
-    if (want !== shown && dialogEl) {
-      shown = want
+    if (!want && shown && dialogEl) {
+      shown = false
       handle.queueTask(() => {
-        if (!dialogEl) return
-        if (want) {
-          dialogEl.showPopover()
-          let closeBtn = dialogEl.querySelector('[data-preview-close]')
-          if (closeBtn instanceof HTMLElement) closeBtn.focus()
-        } else {
-          dialogEl.hidePopover()
-        }
+        dialogEl?.hidePopover()
       })
     }
 
     return (
       <div
+        id="composer-attachment-preview"
         popover="auto"
         role="dialog"
         aria-label={preview ? `Preview ${preview.filename}` : 'Attachment preview'}
@@ -61,9 +58,13 @@ export function ComposerAttachmentPreview(handle: Handle<ComposerAttachmentPrevi
           ref((node) => {
             dialogEl = node as HTMLDivElement
           }),
-          on('close', () => {
-            shown = false
-            handle.props.onClose()
+          on('toggle', (event) => {
+            if ((event as Event & { newState: string }).newState === 'closed') {
+              shown = false
+              handle.props.onClose()
+            } else {
+              shown = true
+            }
           }),
           on('click', (event) => {
             if (event.target === event.currentTarget) hide()

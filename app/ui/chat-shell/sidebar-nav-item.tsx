@@ -25,7 +25,7 @@ export function SidebarNavItem(handle: Handle<ShellNavItem>) {
           resetChatOnSamePath
             ? on('click', (event) => {
                 if (typeof window === 'undefined') return
-                // Pathname-only same-path checks miss `?knowledge=` — always soft-nav
+                // New Chat always soft-navs to `/` (empty landing), even if already there.
                 // to `/` so clientEntry props clear (setup-scope alone is not enough).
                 event.preventDefault()
                 dispatchNewChat()

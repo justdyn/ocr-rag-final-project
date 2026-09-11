@@ -25,9 +25,16 @@ export default createController(routes, {
       }
 
       let url = new URL(request.url)
+      let legacyConversation = url.searchParams.get('conversation')
+      if (legacyConversation) {
+        return redirect(
+          routes.chat.show.href({ conversationId: legacyConversation }),
+          303,
+        )
+      }
+
+      // Empty/new chat: sidebar may still one-KB-list hydrate; no query identity.
       let shell = await loadChatShellServerContext(token, {
-        preferredKnowledgeId: url.searchParams.get('knowledge'),
-        preferredConversationId: url.searchParams.get('conversation'),
         hydrateChat: true,
       })
 

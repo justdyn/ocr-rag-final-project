@@ -97,6 +97,22 @@ export async function listKnowledgeConversations(
   return (await response.json()) as ConversationSummary[]
 }
 
+/** Owned conversation metadata; null if missing/not owned. */
+export async function getConversation(
+  accessToken: string,
+  conversationId: string,
+): Promise<ConversationSummary | null> {
+  let response = await backendFetch(`/api/conversations/${conversationId}`, {
+    method: 'GET',
+    accessToken,
+  })
+  if (response.status === 404) return null
+  if (!response.ok) {
+    throw new Error(await readDetail(response))
+  }
+  return (await response.json()) as ConversationSummary
+}
+
 /** Ordered messages for an owned conversation; null if missing/not owned. */
 export async function getConversationMessages(
   accessToken: string,
@@ -137,8 +153,26 @@ export async function getLastConversationScope(
 }
 
 /**
- * Resolve which conversation to hydrate on the knowledge detail page:
- * optional `?conversation=` override, else the most recently updated thread.
+ * Load messages for a known conversation id (path hydrate).
+ * Does not require the id to appear in a KB conversation list first.
+ */
+export async function loadConversationChatHistory(
+  accessToken: string,
+  conversationId: string,
+): Promise<{
+  conversationId: string | null
+  messages: PersistedMessage[]
+}> {
+  let messages = await getConversationMessages(accessToken, conversationId)
+  if (messages === null) {
+    return { conversationId: null, messages: [] }
+  }
+  return { conversationId, messages }
+}
+
+/**
+ * Resolve which conversation to hydrate when only a knowledge id is known:
+ * optional preferred id if it belongs to the KB, else the most recently updated thread.
  */
 export async function loadKnowledgeChatHistory(
   accessToken: string,
@@ -159,9 +193,5 @@ export async function loadKnowledgeChatHistory(
       ? preferredConversationId
       : conversations[0]!.id
 
-  let messages = await getConversationMessages(accessToken, conversationId)
-  if (messages === null) {
-    return { conversationId: null, messages: [] }
-  }
-  return { conversationId, messages }
+  return loadConversationChatHistory(accessToken, conversationId)
 }

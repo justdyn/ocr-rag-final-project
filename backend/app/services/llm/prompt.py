@@ -18,6 +18,11 @@ Citation rules:
 - Do not invent source ids that were not provided.
 """
 
+MEMORY_SYSTEM_PROMPT = """User memory: durable preferences and facts about this user, \
+recalled from previous conversations. This is context about the user — NOT document \
+sources. Do not cite memories as [N]; [N] is only for the <source> excerpts below. \
+If a memory conflicts with the Sources, prefer the Sources."""
+
 
 @dataclass(frozen=True)
 class PromptBundle:
@@ -52,11 +57,15 @@ def build_rag_messages(
     user_query: str,
     chunks: list[QueryChunkResult],
     history: list[dict[str, str]] | None = None,
+    memory_facts: list[str] | None = None,
 ) -> PromptBundle:
-    """Build system + optional history + user message with injected sources.
+    """Build system + optional memory adjunct + history + user message with sources.
 
     ``history`` is prior conversation turns (role/content only), excluding the
-    current user query (which is appended last with sources).
+    current user query (which is appended last with sources). ``memory_facts``
+    (flag-gated, from retrieve_relevant_memories) becomes a second system
+    message right after SYSTEM_PROMPT, labeled as user context — not document
+    sources, never cited as [N]. ``None``/empty keeps the pre-P1a shape.
     """
     source_text, sources = build_source_blocks(chunks)
     if source_text:
@@ -71,6 +80,14 @@ def build_rag_messages(
         )
 
     messages: list[dict[str, str]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+    if memory_facts:
+        bullets = "\n".join(f"- {fact}" for fact in memory_facts)
+        messages.append(
+            {
+                "role": "system",
+                "content": f"{MEMORY_SYSTEM_PROMPT}\n\nUser memory:\n{bullets}",
+            }
+        )
     if history:
         for turn in history:
             role = turn.get("role")

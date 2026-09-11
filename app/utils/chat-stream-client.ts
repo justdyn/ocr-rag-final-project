@@ -81,7 +81,7 @@ export function applyChatSseFrame(
     let payload = data as { sources?: ChatSource[]; conversation_id?: string }
     let sources = Array.isArray(payload.sources) ? payload.sources : []
     // Conversation is created in prepare_chat before tokens — pin it here so
-    // the URL can include ?conversation= before `done` (F5 mid-stream safe).
+    // the client can replaceState to /chat/:id before `done` (F5 mid-stream safe).
     if (typeof payload.conversation_id === 'string' && payload.conversation_id) {
       state.conversationId = payload.conversation_id
     }

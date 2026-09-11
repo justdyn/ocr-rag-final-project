@@ -133,7 +133,11 @@ export const ChatShellMainPanel = clientEntry(
       knowledgeName = name
       showScopePrompt = false
       handle.update()
-      window.history.replaceState(null, '', shellChatHref(id, conversationId))
+      window.history.replaceState(
+        null,
+        '',
+        conversationId ? shellChatHref(conversationId) : routes.home.href(),
+      )
     }
 
     async function sendQuery(query: string, sent: SentAttachment[]) {
@@ -236,11 +240,11 @@ export const ChatShellMainPanel = clientEntry(
             maybeUpsertConversation()
             // Pin conversation into the URL as soon as SSE reveals it (sources),
             // not only after `done` — F5 during "Thinking…" must still hydrate.
-            if (knowledgeId && state.conversationId) {
+            if (state.conversationId) {
               window.history.replaceState(
                 null,
                 '',
-                shellChatHref(knowledgeId, state.conversationId),
+                shellChatHref(state.conversationId),
               )
             }
             handle.update()
@@ -251,8 +255,8 @@ export const ChatShellMainPanel = clientEntry(
         conversationId = state.conversationId
         streamError = state.streamError
         maybeUpsertConversation()
-        if (knowledgeId && conversationId) {
-          window.history.replaceState(null, '', shellChatHref(knowledgeId, conversationId))
+        if (conversationId) {
+          window.history.replaceState(null, '', shellChatHref(conversationId))
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {

@@ -5,6 +5,7 @@ import { staticFiles } from 'remix/middleware/static'
 import { uploadFormData } from './middleware/form-data.ts'
 
 import controller from './actions/controller.tsx'
+import chatController from './actions/chat/controller.tsx'
 import filesController from './actions/files/controller.tsx'
 import knowledgeController from './actions/knowledge/controller.tsx'
 import knowledgeChatStreamController from './actions/knowledge/chat-stream/controller.tsx'
@@ -38,6 +39,7 @@ export const router = createRouter<AppContext>({
 })
 
 router.map(routes, controller)
+router.map(routes.chat, chatController)
 router.map(routes.login, loginController)
 router.map(routes.register, registerController)
 router.map(routes.files, filesController)
