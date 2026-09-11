@@ -8,6 +8,7 @@ import { redirect } from 'remix/response/redirect'
 import {
   deleteFile,
   FilesApiError,
+  getFileContent,
   getFileStatus,
   uploadFile,
   type FileRecord,
@@ -75,6 +76,38 @@ export default createController(routes.files, {
           return Response.json({ error: error.message }, { status: error.status })
         }
         let message = error instanceof Error ? error.message : 'Status check failed.'
+        return Response.json({ error: message }, { status: 502 })
+      }
+    },
+
+    async content({ session, params }) {
+      let auth = requireAuthFromSession(session, routes.home.href())
+      if (auth instanceof Response) return auth
+
+      try {
+        let upstream = await getFileContent(auth, params.fileId)
+        if (!upstream.ok) {
+          // Error bodies are tiny JSON — buffer and pass status/detail through.
+          let detail = await upstream.text()
+          return new Response(detail, {
+            status: upstream.status,
+            headers: {
+              'Content-Type':
+                upstream.headers.get('Content-Type') ?? 'application/json',
+            },
+          })
+        }
+        // Blob passthrough: stream the upstream body without buffering it.
+        return new Response(upstream.body, {
+          status: 200,
+          headers: {
+            'Content-Type':
+              upstream.headers.get('Content-Type') ?? 'application/octet-stream',
+            'Cache-Control': 'private, max-age=300',
+          },
+        })
+      } catch (error) {
+        let message = error instanceof Error ? error.message : 'File content failed.'
         return Response.json({ error: message }, { status: 502 })
       }
     },

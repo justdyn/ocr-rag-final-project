@@ -55,7 +55,7 @@ globals.CSSStyleSheet = FakeCSSStyleSheet
 // --- dynamic imports after the shim -----------------------------------------
 let { render } = await import('@remix-run/ui/test')
 let { ChatMessageBubble } = await import('./chat-message-bubble.tsx')
-import type { ChatMessage } from '../utils/chat-types.ts'
+import type { ChatAttachment, ChatMessage } from '../utils/chat-types.ts'
 
 function cssRuleText(): string[] {
   let sheets = (dom.document as unknown as { adoptedStyleSheets: { cssRules: { cssText: string }[] }[] })
@@ -155,6 +155,24 @@ describe('ChatMessageBubble — assistant turn', () => {
     view.cleanup()
   })
 
+  it('renders markdown blocks instead of raw syntax', () => {
+    let view = renderMessage({
+      localId: 'a1',
+      role: 'assistant',
+      content: '## Ringkasan\n\n- poin satu\n\n```txt\nSPJ-01\n```',
+      sources: [],
+    })
+    assert.ok(view.$('h2'), 'heading rendered as element')
+    assert.equal(view.$('h2')?.textContent, 'Ringkasan')
+    assert.ok(view.$('ul'), 'list rendered')
+    assert.ok(view.$('pre code'), 'code block rendered')
+    assert.ok(
+      !(view.container.textContent ?? '').includes('##'),
+      'no raw markdown syntax leaked',
+    )
+    view.cleanup()
+  })
+
   it('shows a quiet Thinking… placeholder while streaming', () => {
     let view = renderMessage({
       localId: 'a1',
@@ -179,6 +197,77 @@ describe('ChatMessageBubble — assistant turn', () => {
     let sr = view.container.querySelector('.sr-only')
     assert.ok(sr, 'sr-only incomplete note present')
     assert.match(sr!.textContent ?? '', /incomplete/i)
+    view.cleanup()
+  })
+})
+
+describe('ChatMessageBubble — user attachment thumbs', () => {
+  let imageAtt: ChatAttachment = {
+    file_id: 'file-img',
+    filename: 'receipt.png',
+    content_type: 'image/png',
+    extraction_method: 'ocr:tesseract',
+    ocr_confidence: 91.5,
+    text_excerpt: null,
+  }
+  let textAtt: ChatAttachment = {
+    file_id: 'file-txt',
+    filename: 'notes.txt',
+    content_type: 'text/plain',
+    extraction_method: 'text_layer',
+    ocr_confidence: null,
+    text_excerpt: 'alpha beta',
+  }
+
+  it('renders no attachment list when a user turn has none (markup unchanged)', () => {
+    let view = renderMessage({
+      localId: 'u1',
+      role: 'user',
+      content: 'Hello thread',
+      sources: [],
+    })
+    let list = view.container.querySelector('ul[aria-label="Attached files"]')
+    assert.equal(list, null)
+    view.cleanup()
+  })
+
+  it('renders one thumb per attachment; images load via the blob-content route', () => {
+    let view = renderMessage({
+      localId: 'u2',
+      role: 'user',
+      content: 'Could you do retrieval from both images?',
+      sources: [],
+      attachments: [imageAtt, textAtt],
+    })
+    let thumbs = Array.from(view.container.querySelectorAll('ul[aria-label="Attached files"] button'))
+    assert.equal(thumbs.length, 2)
+    let img = view.container.querySelector('ul[aria-label="Attached files"] img')
+    assert.ok(img)
+    assert.match(img!.getAttribute('src') ?? '', /\/files\/file-img\/content$/)
+    assert.equal(img!.getAttribute('alt'), 'receipt.png')
+    view.cleanup()
+  })
+
+  it('keeps the thumbnail contract: wrapped 56px tiles + popover backdrop', () => {
+    let view = renderMessage({
+      localId: 'u3',
+      role: 'user',
+      content: 'Hi',
+      sources: [],
+      attachments: [imageAtt, textAtt],
+    })
+    let ul = view.container.querySelector('ul[aria-label="Attached files"]')!
+    let ulRule = ruleFor(ul)
+    assert.ok(ulRule.includes('wrap'), `thumb row wraps, got: ${ulRule}`)
+    let thumb = ul.querySelector('li')!
+    let thumbRule = ruleFor(thumb)
+    assert.ok(thumbRule.includes('56px'), `thumb is a 56px tile, got: ${thumbRule}`)
+    let backdrop = view.container.querySelector('div[popover="auto"]')!
+    let backdropRule = ruleFor(backdrop)
+    assert.ok(
+      backdropRule.includes(':popover-open'),
+      `popover centering gated on :popover-open, got: ${backdropRule}`,
+    )
     view.cleanup()
   })
 })

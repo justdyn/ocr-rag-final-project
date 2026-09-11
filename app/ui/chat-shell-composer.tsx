@@ -19,9 +19,11 @@ import {
   previewUrlForFile,
   readyAttachmentFileIds,
   revokePreviewUrl,
+  sentAttachmentsFrom,
   type AttachmentPreview,
   type AttachmentPreviewState,
   type ComposerAttachment,
+  type SentAttachment,
 } from '../utils/composer-attachments.ts'
 import {
   postAddKnowledgeFileJson,
@@ -58,7 +60,7 @@ export type ChatShellComposerProps = {
   knowledgeName: string | null
   streaming: boolean
   resetGeneration: number
-  onSend: (query: string) => void
+  onSend: (query: string, sent: SentAttachment[]) => void
   onScopeReady: (knowledgeId: string, knowledgeName: string) => void
 }
 
@@ -389,10 +391,12 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
                 event.preventDefault()
                 let query = draft.trim()
                 if (!query) return
+                // Snapshot the ready files BEFORE releaseDraftStrip empties `attachments`.
+                let sent = sentAttachmentsFrom(attachments)
                 draft = ''
                 releaseDraftStrip()
                 handle.update()
-                handle.props.onSend(query)
+                handle.props.onSend(query, sent)
               }),
             ]}
           >
@@ -432,10 +436,12 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
                       event.preventDefault()
                       let query = draft.trim()
                       if (!query || handle.props.streaming || attachPending) return
+                      // Snapshot the ready files BEFORE releaseDraftStrip empties `attachments`.
+                      let sent = sentAttachmentsFrom(attachments)
                       draft = ''
                       releaseDraftStrip()
                       handle.update()
-                      handle.props.onSend(query)
+                      handle.props.onSend(query, sent)
                     }
                   }),
                 ]}

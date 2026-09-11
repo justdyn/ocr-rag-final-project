@@ -81,6 +81,49 @@ async def _enrich_source_filenames(
     return [{**s, "filename": by_id.get(s["file_id"])} for s in sources]
 
 
+MAX_MESSAGE_ATTACHMENTS = 12
+ATTACHMENT_EXCERPT_CHARS = 400
+
+
+async def _resolve_message_attachments(
+    db: AsyncSession, *, user_id: str, file_ids: list[str] | None
+) -> list[dict[str, Any]]:
+    """Snapshot owned files for the user message's ``attachments`` payload.
+
+    Request ids are untrusted: dedupe, cap, and ownership-filter — missing or
+    foreign rows are silently dropped (same tolerance as _enrich_source_filenames).
+    """
+    if not file_ids:
+        return []
+    unique_ids = list(dict.fromkeys(file_ids))[:MAX_MESSAGE_ATTACHMENTS]
+    rows = (
+        await db.scalars(
+            select(File).where(File.id.in_(unique_ids), File.user_id == user_id)
+        )
+    ).all()
+    by_id = {row.id: row for row in rows}
+    out: list[dict[str, Any]] = []
+    for file_id in unique_ids:
+        row = by_id.get(file_id)
+        if row is None:
+            continue
+        meta = row.meta or {}
+        data = row.data if isinstance(row.data, dict) else {}
+        text = data.get("text")
+        excerpt = str(text).strip()[:ATTACHMENT_EXCERPT_CHARS] if text else None
+        out.append(
+            {
+                "file_id": row.id,
+                "filename": row.filename,
+                "content_type": meta.get("content_type"),
+                "extraction_method": row.extraction_method,
+                "ocr_confidence": row.ocr_confidence,
+                "text_excerpt": excerpt,
+            }
+        )
+    return out
+
+
 async def _get_or_create_conversation(
     db: AsyncSession,
     *,
@@ -143,6 +186,7 @@ async def prepare_chat(
     query: str,
     conversation_id: str | None = None,
     k: int | None = None,
+    attachment_file_ids: list[str] | None = None,
     provider_factory: ProviderFactory | None = None,
 ) -> tuple[ChatPrepared, LLMProvider]:
     """Retrieve chunks, build prompt, ensure conversation + user message exist.
@@ -189,6 +233,9 @@ async def prepare_chat(
     bundle = build_rag_messages(user_query=query, chunks=chunks, history=history)
     # Same list is emitted on SSE `sources`, non-streaming JSON, and message.sources.
     sources = await _enrich_source_filenames(db, bundle.sources)
+    attachments = await _resolve_message_attachments(
+        db, user_id=user_id, file_ids=attachment_file_ids
+    )
 
     now = int(time.time())
     user_msg = Message(
@@ -197,6 +244,7 @@ async def prepare_chat(
         role="user",
         content=query,
         sources=None,
+        attachments=attachments or None,
         created_at=now,
     )
     db.add(user_msg)
@@ -265,7 +313,16 @@ async def stream_chat_events(
     Uses a fresh DB session for assistant persistence because the request-scoped
     session may already be closed by the time StreamingResponse is consumed.
     """
-    yield format_sse("sources", {"sources": prepared.sources})
+    # conversation_id is known before the first token (prepare_chat commits the
+    # user turn first). Emit it on `sources` so the client can pin ?conversation=
+    # in the URL before `done` — otherwise F5 mid-stream drops the thread.
+    yield format_sse(
+        "sources",
+        {
+            "sources": prepared.sources,
+            "conversation_id": prepared.conversation_id,
+        },
+    )
 
     parts: list[str] = []
     error_message: str | None = None

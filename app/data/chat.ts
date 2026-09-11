@@ -12,6 +12,8 @@ export type ChatCompletionsBody = {
   query: string
   conversation_id?: string | null
   k?: number
+  /** Owned file ids to snapshot onto the persisted user message. */
+  attachment_file_ids?: string[]
 }
 
 export type { ConversationSummary, PersistedMessage }
@@ -49,6 +51,9 @@ export async function proxyKnowledgeChatStream(
       conversation_id: body.conversation_id ?? null,
       stream: true,
       ...(typeof body.k === 'number' ? { k: body.k } : {}),
+      ...(body.attachment_file_ids?.length
+        ? { attachment_file_ids: body.attachment_file_ids }
+        : {}),
     },
   })
 
@@ -106,6 +111,29 @@ export async function getConversationMessages(
     throw new Error(await readDetail(response))
   }
   return (await response.json()) as PersistedMessage[]
+}
+
+/** Last-active hydrate scope: KB of the user's most recent conversation (null if none). */
+export async function getLastConversationScope(
+  accessToken: string,
+): Promise<{ knowledgeId: string; knowledgeName: string } | null> {
+  let response = await backendFetch('/api/conversations/last', {
+    method: 'GET',
+    accessToken,
+  })
+  if (response.status === 404) return null
+  if (!response.ok) {
+    throw new Error(await readDetail(response))
+  }
+  let scope = (await response.json()) as {
+    knowledge_id: string
+    knowledge_name: string
+  } | null
+  if (!scope) return null
+  return {
+    knowledgeId: scope.knowledge_id,
+    knowledgeName: scope.knowledge_name,
+  }
 }
 
 /**

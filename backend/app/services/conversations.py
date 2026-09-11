@@ -12,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.conversation import Conversation
 from app.models.knowledge import Knowledge
 from app.models.message import Message
-from app.schemas.chat import KnowledgeConversationItem, MessageResponse
+from app.schemas.chat import (
+    KnowledgeConversationItem,
+    LastConversationScope,
+    MessageResponse,
+)
 
 
 async def _owned_knowledge(
@@ -62,6 +66,35 @@ async def list_conversations_for_knowledge(
     ]
 
 
+async def get_last_conversation_scope(
+    db: AsyncSession, *, user_id: str
+) -> LastConversationScope | None:
+    """Sidebar hydrate scope: KB of the user's most recent conversation.
+
+    Skips unscoped (``knowledge_id IS NULL``) rows and KBs the user no longer
+    owns. ``None`` = hydrate nothing (bare new chat, empty sidebar list).
+    """
+    record = (
+        await db.execute(
+            select(Conversation.knowledge_id, Knowledge.name)
+            .join(Knowledge, Knowledge.id == Conversation.knowledge_id)
+            .where(
+                Conversation.user_id == user_id,
+                Conversation.knowledge_id.is_not(None),
+                Knowledge.user_id == user_id,
+            )
+            .order_by(Conversation.updated_at.desc())
+            .limit(1)
+        )
+    ).first()
+    if record is None:
+        return None
+    knowledge_id, knowledge_name = record
+    return LastConversationScope(
+        knowledge_id=knowledge_id, knowledge_name=knowledge_name
+    )
+
+
 async def list_messages_for_conversation(
     db: AsyncSession,
     *,
@@ -94,6 +127,7 @@ async def list_messages_for_conversation(
             role=row.role,
             content=row.content,
             sources=row.sources,
+            attachments=row.attachments,
             created_at=row.created_at,
         )
         for row in rows

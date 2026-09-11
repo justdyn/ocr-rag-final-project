@@ -23,7 +23,8 @@ export function ChatShellContentMain(handle: Handle<ChatShellContentMainProps>) 
     return (
       <div mix={mainStyle}>
         <ShellMainHeader authenticated={authenticated} knowledgeName={knowledgeName} />
-        <main mix={mainContentWideStyle}>
+        {/* Own scroll container — opts out of the root Lenis hijack (§4.3). */}
+        <main mix={mainContentWideStyle} data-lenis-prevent="">
           <div mix={contentPanelStyle}>{children}</div>
         </main>
       </div>

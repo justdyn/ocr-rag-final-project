@@ -7,8 +7,9 @@ export const mainStyle = css({
   flexDirection: 'column',
   flex: '1 1 auto',
   minWidth: 0,
-  minHeight: '100vh',
-  padding: '0 15px',
+  // No horizontal padding here — the thread scroller must be full-bleed so the
+  // scrollbar sits on the main-panel right edge (ChatGPT pattern), not beside
+  // the max-width message column. Padding lives on the centered inner column.
   overflow: 'hidden',
 })
 
@@ -17,10 +18,8 @@ export const mainHeaderStyle = css({
   alignItems: 'center',
   justifyContent: 'space-between',
   height: '52px',
-  padding: '8px',
+  padding: '8px 15px',
   flexShrink: 0,
-  position: 'sticky',
-  top: 0,
   zIndex: 2,
   background: 'var(--home-bg)',
   gap: '8px',
@@ -142,19 +141,60 @@ export const mainContentStyle = css({
   width: '100%',
   maxWidth: '768px',
   margin: '0 auto',
+  padding: '0 15px',
 })
 
-/** Vertically centers hero + composer as one unit (Figma main stage). */
-export const mainStageStyle = css({
+/**
+ * Full-bleed chat scroller — owns overflow across the entire main panel so the
+ * scrollbar sits on the right edge; message column stays centered inside.
+ * data-empty="true": vertically center the hero (composer stays in the dock).
+ */
+export const chatScrollRegionStyle = css({
+  flex: '1 1 auto',
+  minHeight: 0,
+  width: '100%',
+  overflowY: 'auto',
+  '&[data-empty="true"]': {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+})
+
+/** Centered message / composer column inside the full-bleed scroller or dock. */
+export const chatColumnStyle = css({
+  width: '100%',
+  maxWidth: '768px',
+  margin: '0 auto',
+  padding: '0 15px',
+})
+
+/** Pins composer + legal footer below the thread scroller — always mounted. */
+export const composerDockStyle = css({
+  flexShrink: 0,
+  width: '100%',
+  padding: '0 0 8px',
+})
+
+/** Empty-state hero stack inside the scroll region (composer lives in the dock). */
+export const emptyStageStyle = css({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  flex: '1 1 auto',
-  minHeight: 0,
   width: '100%',
-  gap: '32px',
+  gap: '24px',
   padding: '24px 0',
+})
+
+/** Hidden when chat has messages — always in the DOM for hydration stability. */
+export const emptyStageHiddenStyle = css({
+  display: 'none',
+})
+
+/** Hidden when the thread is empty — always in the DOM for hydration stability. */
+export const chatThreadHiddenStyle = css({
+  display: 'none',
 })
 
 export const heroStyle = css({
@@ -200,26 +240,13 @@ export const legalLinkStyle = css({
   '&:hover, &:focus-visible': { color: 'var(--home-fg)', outline: 'none' },
 })
 
-/** Authenticated chat thread — fills stage between header and composer. */
+/** Authenticated chat thread — grows with content; parent region scrolls. */
 export const chatThreadStyle = css({
   display: 'flex',
   flexDirection: 'column',
   gap: '24px',
-  flex: '1 1 auto',
-  minHeight: 0,
   width: '100%',
-  overflowY: 'auto',
-  padding: '8px 0 16px',
-})
-
-export const chatStageActiveStyle = css({
-  display: 'flex',
-  flexDirection: 'column',
-  flex: '1 1 auto',
-  minHeight: 0,
-  width: '100%',
-  gap: '16px',
-  padding: '16px 0 0',
+  padding: '16px 0 24px',
 })
 
 export const scopePromptStyle = css({
@@ -260,17 +287,19 @@ export const shellAlertStyle = css({
   lineHeight: '20px',
 })
 
+/** Full-bleed scroller for DocIntel content routes (same edge-scrollbar rule). */
 export const mainContentWideStyle = css({
   display: 'flex',
   flexDirection: 'column',
   flex: '1 1 auto',
   minHeight: 0,
   width: '100%',
-  maxWidth: '960px',
-  margin: '0 auto',
-  padding: '16px 0 32px',
+  overflowY: 'auto',
+  padding: '16px 15px 32px',
 })
 
 export const contentPanelStyle = css({
   width: '100%',
+  maxWidth: '960px',
+  margin: '0 auto',
 })

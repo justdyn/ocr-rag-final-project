@@ -85,3 +85,18 @@ export async function deleteFile(
     await throwIfNotOk(response)
   }
 }
+
+/**
+ * Raw blob passthrough for attachment thumbnails/modals — returns the upstream
+ * Response unbuffered; the controller re-streams its body. Never consume the
+ * body here (the controller needs it).
+ */
+export async function getFileContent(
+  accessToken: string,
+  fileId: string,
+): Promise<Response> {
+  return backendFetch(`/api/files/${fileId}/content`, {
+    method: 'GET',
+    accessToken,
+  })
+}

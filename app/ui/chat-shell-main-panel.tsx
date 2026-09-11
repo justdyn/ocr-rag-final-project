@@ -11,10 +11,13 @@ import { LegalFooter } from './chat-shell/legal-footer.tsx'
 import { ShellMainHeader } from './chat-shell/main-header.tsx'
 import { ChatShellComposer } from './chat-shell-composer.tsx'
 import {
-  chatStageActiveStyle,
+  chatColumnStyle,
+  chatScrollRegionStyle,
+  chatThreadHiddenStyle,
   chatThreadStyle,
-  mainContentStyle,
-  mainStageStyle,
+  composerDockStyle,
+  emptyStageHiddenStyle,
+  emptyStageStyle,
   mainStyle,
   scopePromptBodyStyle,
   scopePromptStyle,
@@ -33,6 +36,7 @@ import {
   type ChatStreamMutableState,
 } from '../utils/chat-stream-client.ts'
 import type { ChatMessage, ChatStreamError } from '../utils/chat-types.ts'
+import type { SentAttachment } from '../utils/composer-attachments.ts'
 import {
   conversationTitleFromQuery,
   dispatchConversationUpsert,
@@ -99,6 +103,9 @@ export const ChatShellMainPanel = clientEntry(
       messages = cloneInitialMessages(props.initialMessages ?? [])
       appliedFromPropsKey = chatShellScopeKey(knowledgeId, conversationId)
       composerReset += 1
+      // The full-bleed chat region owns scroll now (root Lenis no longer resets
+      // document scroll for us) — a soft-nav into another conversation starts pinned low.
+      if (messages.length > 0) scrollToBottom()
     }
 
     function resetToNewChat() {
@@ -129,7 +136,7 @@ export const ChatShellMainPanel = clientEntry(
       window.history.replaceState(null, '', shellChatHref(id, conversationId))
     }
 
-    async function sendQuery(query: string) {
+    async function sendQuery(query: string, sent: SentAttachment[]) {
       if (!query || streaming) return
 
       if (!authenticated) {
@@ -148,11 +155,22 @@ export const ChatShellMainPanel = clientEntry(
       showScopePrompt = false
       streaming = true
 
+      // Optimistic snapshot: file_id/filename only — server metadata (MIME,
+      // extraction, excerpt) fills in after reload/soft-nav re-apply.
+      let attachments = sent.map((row) => ({
+        file_id: row.fileId,
+        filename: row.filename,
+        content_type: null,
+        extraction_method: null,
+        ocr_confidence: null,
+        text_excerpt: null,
+      }))
       let userMsg: ChatMessage = {
         localId: newChatLocalId('user'),
         role: 'user',
         content: query,
         sources: [],
+        attachments: attachments.length > 0 ? attachments : undefined,
       }
       let assistantMsg: ChatMessage = {
         localId: newChatLocalId('asst'),
@@ -207,6 +225,7 @@ export const ChatShellMainPanel = clientEntry(
           knowledgeId,
           query,
           conversationId,
+          attachmentFileIds: sent.map((row) => row.fileId),
           state,
           assistantLocalId: assistantMsg.localId,
           signal: abortController.signal,
@@ -215,6 +234,15 @@ export const ChatShellMainPanel = clientEntry(
             conversationId = state.conversationId
             streamError = state.streamError
             maybeUpsertConversation()
+            // Pin conversation into the URL as soon as SSE reveals it (sources),
+            // not only after `done` — F5 during "Thinking…" must still hydrate.
+            if (knowledgeId && state.conversationId) {
+              window.history.replaceState(
+                null,
+                '',
+                shellChatHref(knowledgeId, state.conversationId),
+              )
+            }
             handle.update()
             scrollToBottom()
           },
@@ -257,6 +285,10 @@ export const ChatShellMainPanel = clientEntry(
         authenticated &&
         (messages.length > 0 || Boolean(knowledgeId && conversationId))
       let banner = streamError ? chatErrorBannerCopy(streamError) : null
+      // Empty stage = no thread yet. Keep the same DOM hosts either way —
+      // swapping trees (composer parent, fragment vs <main>) double-mounts
+      // nested clientEntry on F5 / soft-nav (handoff §6).
+      let showEmptyStage = !inChatMode
 
       let composer = (
         <ChatShellComposer
@@ -265,21 +297,12 @@ export const ChatShellMainPanel = clientEntry(
           knowledgeName={knowledgeName}
           streaming={streaming}
           resetGeneration={composerReset}
-          onSend={(query) => {
-            void sendQuery(query)
+          onSend={(query, sent) => {
+            void sendQuery(query, sent)
           }}
           onScopeReady={onScopeReady}
         />
       )
-
-      let scopePrompt = showScopePrompt ? (
-        <div mix={scopePromptStyle} role="dialog" aria-labelledby="scope-prompt-title">
-          <h2 id="scope-prompt-title" mix={scopePromptTitleStyle}>
-            {SHELL_COPY.scopePromptTitle}
-          </h2>
-          <p mix={scopePromptBodyStyle}>{SHELL_COPY.scopePromptBody}</p>
-        </div>
-      ) : null
 
       return (
         <div mix={mainStyle}>
@@ -287,50 +310,72 @@ export const ChatShellMainPanel = clientEntry(
             authenticated={authenticated}
             knowledgeName={knowledgeName}
           />
-          <main mix={mainContentStyle}>
-            {inChatMode ? (
-              <div mix={chatStageActiveStyle}>
-                {banner ? (
-                  <div mix={shellAlertStyle} role="alert">
-                    <strong>{banner.title}</strong>
-                    <div>{banner.body}</div>
+          <div
+            mix={[
+              chatScrollRegionStyle,
+              ref((node) => {
+                listEl = node as HTMLElement
+              }),
+            ]}
+            data-empty={showEmptyStage ? 'true' : 'false'}
+            // Nested scroller opts out of the root Lenis hijack (§4.3).
+            data-lenis-prevent=""
+          >
+            <div mix={chatColumnStyle}>
+              <div
+                mix={showEmptyStage ? emptyStageStyle : emptyStageHiddenStyle}
+                aria-hidden={showEmptyStage ? undefined : 'true'}
+              >
+                {/* Always mount hero — hide via parent data/CSS when in-thread.
+                    Scope prompt is overlay content, not a chrome swap. */}
+                <div
+                  mix={showScopePrompt ? emptyStageHiddenStyle : undefined}
+                  aria-hidden={showScopePrompt ? 'true' : undefined}
+                >
+                  <ChatHero />
+                </div>
+                {showScopePrompt ? (
+                  <div mix={scopePromptStyle} role="dialog" aria-labelledby="scope-prompt-title">
+                    <h2 id="scope-prompt-title" mix={scopePromptTitleStyle}>
+                      {SHELL_COPY.scopePromptTitle}
+                    </h2>
+                    <p mix={scopePromptBodyStyle}>{SHELL_COPY.scopePromptBody}</p>
                   </div>
                 ) : null}
-                <ul
-                  mix={[
-                    chatThreadStyle,
-                    ref((node) => {
-                      listEl = node as HTMLElement
-                    }),
-                  ]}
-                  // Nested scroller opts out of the root Lenis hijack (§4.3) —
-                  // Lenis would preventDefault wheel events aimed at this list.
-                  data-lenis-prevent=""
-                  aria-live="polite"
-                >
-                  {messages.map((message) => {
-                    let shouldAnimate = animateLocalIds.has(message.localId)
-                    if (shouldAnimate) animateLocalIds.delete(message.localId)
-                    return (
-                      <ChatMessageBubble
-                        key={message.localId}
-                        message={message}
-                        animateEntrance={shouldAnimate}
-                      />
-                    )
-                  })}
-                </ul>
-                {composer}
               </div>
-            ) : (
-              <div mix={mainStageStyle}>
-                {scopePrompt}
-                {!showScopePrompt ? <ChatHero /> : null}
-                {composer}
-              </div>
-            )}
+              {banner ? (
+                <div mix={shellAlertStyle} role="alert">
+                  <strong>{banner.title}</strong>
+                  <div>{banner.body}</div>
+                </div>
+              ) : null}
+              <ul
+                mix={
+                  showEmptyStage
+                    ? [chatThreadStyle, chatThreadHiddenStyle]
+                    : chatThreadStyle
+                }
+                aria-live="polite"
+                aria-hidden={showEmptyStage ? 'true' : undefined}
+              >
+                {messages.map((message) => {
+                  let shouldAnimate = animateLocalIds.has(message.localId)
+                  if (shouldAnimate) animateLocalIds.delete(message.localId)
+                  return (
+                    <ChatMessageBubble
+                      key={message.localId}
+                      message={message}
+                      animateEntrance={shouldAnimate}
+                    />
+                  )
+                })}
+              </ul>
+            </div>
+          </div>
+          <div mix={composerDockStyle}>
+            <div mix={chatColumnStyle}>{composer}</div>
             <LegalFooter />
-          </main>
+          </div>
         </div>
       )
     }

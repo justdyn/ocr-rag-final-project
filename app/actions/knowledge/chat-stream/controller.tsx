@@ -26,6 +26,7 @@ export default createController(routes.knowledge.chatStream, {
         query?: unknown
         conversation_id?: unknown
         k?: unknown
+        attachment_file_ids?: unknown
       } | null
 
       let query = typeof body?.query === 'string' ? body.query.trim() : ''
@@ -42,11 +43,22 @@ export default createController(routes.knowledge.chatStream, {
           ? Math.trunc(body.k)
           : undefined
 
+      // Untrusted client list — backend ownership-filters; we only normalize shape.
+      let attachmentFileIds: string[] | undefined
+      if (Array.isArray(body?.attachment_file_ids)) {
+        let ids = body.attachment_file_ids
+          .filter((id): id is string => typeof id === 'string' && id.trim().length > 0)
+          .map((id) => id.trim())
+          .slice(0, 12)
+        if (ids.length > 0) attachmentFileIds = ids
+      }
+
       try {
         return await proxyKnowledgeChatStream(auth, params.knowledgeId, {
           query,
           conversation_id: conversationId,
           k,
+          attachment_file_ids: attachmentFileIds,
         }, request.signal)
       } catch (error) {
         let message =

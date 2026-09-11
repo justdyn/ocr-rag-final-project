@@ -51,7 +51,7 @@ export function entranceUserBubble() {
 }
 
 /**
- * Pin a nested scroller (the chat thread) to its bottom with a short tween.
+ * Pin a nested scroller (the full-bleed chat region) to its bottom with a short tween.
  * Lenis owns document scroll (§4.1) — nested overflow regions animate their own
  * scrollTop via framer-motion/dom instead of raw jumps. Reduced motion = instant
  * jump (§5.4). One animation per element: restart retargets from the current

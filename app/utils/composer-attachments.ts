@@ -105,6 +105,15 @@ export function readyAttachmentFileIds(rows: ComposerAttachment[]): string[] {
     .map((row) => row.fileId as string)
 }
 
+/** File summary captured at send time — before releaseDraftStrip clears the strip. */
+export type SentAttachment = { fileId: string; filename: string }
+
+export function sentAttachmentsFrom(rows: ComposerAttachment[]): SentAttachment[] {
+  return rows
+    .filter((row) => row.status === 'ready' && row.fileId)
+    .map((row) => ({ fileId: row.fileId as string, filename: row.filename }))
+}
+
 export function summarizeAttachments(rows: ComposerAttachment[]): string {
   return rows
     .map((row) => {

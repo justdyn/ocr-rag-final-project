@@ -78,8 +78,13 @@ export function applyChatSseFrame(
   let current = state.messages[assistantIndex]!
 
   if (event === 'sources') {
-    let payload = data as { sources?: ChatSource[] }
+    let payload = data as { sources?: ChatSource[]; conversation_id?: string }
     let sources = Array.isArray(payload.sources) ? payload.sources : []
+    // Conversation is created in prepare_chat before tokens — pin it here so
+    // the URL can include ?conversation= before `done` (F5 mid-stream safe).
+    if (typeof payload.conversation_id === 'string' && payload.conversation_id) {
+      state.conversationId = payload.conversation_id
+    }
     state.messages[assistantIndex] = { ...current, sources }
     return
   }
@@ -157,6 +162,7 @@ export async function runKnowledgeChatStream(params: {
   knowledgeId: string
   query: string
   conversationId: string | null
+  attachmentFileIds?: string[]
   state: ChatStreamMutableState
   assistantLocalId: string
   signal?: AbortSignal
@@ -176,6 +182,9 @@ export async function runKnowledgeChatStream(params: {
       body: JSON.stringify({
         query,
         conversation_id: conversationId,
+        ...(params.attachmentFileIds?.length
+          ? { attachment_file_ids: params.attachmentFileIds }
+          : {}),
       }),
       signal,
     },
@@ -226,5 +235,9 @@ export async function runKnowledgeChatStream(params: {
 }
 
 export function cloneInitialMessages(rows: ChatMessage[]): ChatMessage[] {
-  return rows.map((m) => ({ ...m, sources: [...m.sources] }))
+  return rows.map((m) => ({
+    ...m,
+    sources: [...m.sources],
+    attachments: m.attachments ? [...m.attachments] : undefined,
+  }))
 }

@@ -14,6 +14,9 @@ class ChatCompletionRequest(BaseModel):
     scope_id: str = Field(min_length=1, max_length=36)
     query: str = Field(min_length=1, max_length=8000)
     conversation_id: str | None = Field(default=None, max_length=36)
+    # Optional per-message attachment record: file ids uploaded by the same user,
+    # resolved into a snapshot on the persisted user message (untrusted → filtered).
+    attachment_file_ids: list[str] | None = Field(default=None, max_length=12)
     stream: bool = True
     k: int | None = Field(
         default=None,
@@ -67,12 +70,24 @@ class KnowledgeConversationItem(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LastConversationScope(BaseModel):
+    """Sidebar hydrate scope: KB of the user's most recent conversation.
+
+    Not the composer scope — that only ever comes from `?knowledge=`.
+    """
+
+    knowledge_id: str
+    knowledge_name: str
+
+
 class MessageResponse(BaseModel):
     id: str
     conversation_id: str
     role: str
     content: str
     sources: list[dict[str, Any]] | dict[str, Any] | None = None
+    # Attachment snapshot for user turns (additive — None for assistant/legacy rows).
+    attachments: list[dict[str, Any]] | None = None
     created_at: int
 
     model_config = {"from_attributes": True}

@@ -8,6 +8,7 @@ import {
   crossedSentenceBoundary,
   citationFileLabel,
   segmentCitedContent,
+  sourceByCitationId,
 } from './chat-citations.ts'
 import { consumeSseBuffer } from './sse-parse.ts'
 import {
@@ -56,6 +57,16 @@ describe('segmentCitedContent', () => {
       { type: 'citation', id: 3 },
       { type: 'text', value: ' end.' },
     ])
+  })
+
+  it('passes through unknown ids and leaves partial markers as text (streaming safety)', () => {
+    let segments = segmentCitedContent('cite [1 and [9] unknown')
+    assert.deepEqual(segments, [
+      { type: 'text', value: 'cite [1 and ' },
+      { type: 'citation', id: 9 },
+      { type: 'text', value: ' unknown' },
+    ])
+    assert.equal(sourceByCitationId([], 9), undefined)
   })
 })
 

@@ -88,6 +88,16 @@ before(() => {
       })
     }
 
+    let contentMatch = url.match(/\/api\/files\/([^/]+)\/content$/)
+    if (contentMatch && method === 'GET') {
+      let row = fileStore.find((f) => f.id === contentMatch[1])
+      if (!row) return Response.json({ detail: 'Not found' }, { status: 404 })
+      return new Response('PNG-CONTENT', {
+        status: 200,
+        headers: { 'Content-Type': 'image/png' },
+      })
+    }
+
     let deleteMatch = url.match(/\/api\/files\/([^/]+)$/)
     if (deleteMatch && method === 'DELETE') {
       let idx = fileStore.findIndex((f) => f.id === deleteMatch[1])
@@ -303,5 +313,51 @@ describe('files BFF (no library page)', () => {
     )
     assert.equal(response.status, 204)
     assert.equal(fileStore.length, 0)
+  })
+
+  it('GET /files/:id/content streams blob bytes with content-type and private cache headers', async () => {
+    fileStore = [
+      {
+        id: 'blob-1',
+        filename: 'receipt.png',
+        status: 'ready',
+        extraction_method: 'ocr:tesseract',
+        error: null,
+        meta: null,
+        created_at: 1,
+        updated_at: 1,
+        ocr_confidence: 91.5,
+        hash: null,
+      },
+    ]
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let response = await router.fetch(
+      new Request('http://localhost' + routes.files.content.href({ fileId: 'blob-1' }), {
+        headers: { Cookie: cookie, Accept: 'image/png' },
+      }),
+    )
+    assert.equal(response.status, 200)
+    assert.equal(await response.text(), 'PNG-CONTENT')
+    assert.equal(response.headers.get('Content-Type'), 'image/png')
+    assert.equal(response.headers.get('Cache-Control'), 'private, max-age=300')
+  })
+
+  it('GET /files/:id/content passes through 404 for unknown files', async () => {
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let response = await router.fetch(
+      new Request('http://localhost' + routes.files.content.href({ fileId: 'ghost-1' }), {
+        headers: { Cookie: cookie },
+      }),
+    )
+    assert.equal(response.status, 404)
+  })
+
+  it('GET /files/:id/content redirects anonymous users to login (303)', async () => {
+    let response = await router.fetch(
+      new Request('http://localhost' + routes.files.content.href({ fileId: 'blob-1' })),
+    )
+    assert.equal(response.status, 303)
+    let location = response.headers.get('Location') ?? ''
+    assert.ok(location.startsWith('/login'), `redirects to login, got: ${location}`)
   })
 })

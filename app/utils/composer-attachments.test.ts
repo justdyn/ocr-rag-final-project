@@ -9,6 +9,8 @@ import {
   previewStateForRow,
   previewUrlForAttachment,
   revokePreviewUrl,
+  sentAttachmentsFrom,
+  type ComposerAttachment,
 } from './composer-attachments.ts'
 
 describe('isImageAttachmentName', () => {
@@ -135,5 +137,23 @@ describe('isUnpersistedUpload', () => {
       }),
       false,
     )
+  })
+})
+
+describe('sentAttachmentsFrom', () => {
+  it('captures only ready rows that carry a file id', () => {
+    let rows: ComposerAttachment[] = [
+      { localId: 'a', filename: 'p.png', fileId: 'file-1', status: 'ready', error: null, image: true },
+      { localId: 'b', filename: 'paper.pdf', fileId: 'file-2', status: 'uploading', error: null },
+      { localId: 'c', filename: 'notes.txt', fileId: null, status: 'ready', error: null },
+      { localId: 'd', filename: 'x.txt', fileId: 'file-3', status: 'failed', error: 'boom' },
+    ]
+    assert.deepEqual(sentAttachmentsFrom(rows), [
+      { fileId: 'file-1', filename: 'p.png' },
+    ])
+  })
+
+  it('returns [] when nothing is ready', () => {
+    assert.deepEqual(sentAttachmentsFrom([]), [])
   })
 })

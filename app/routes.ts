@@ -11,6 +11,8 @@ export const routes = route({
     index: get('/'),
     upload: post('upload'),
     status: get(':fileId/status'),
+    // Raw blob proxy for attachment thumbnails/modals (ownership enforced upstream).
+    content: get(':fileId/content'),
     destroy: del(':fileId'),
   }),
   // Create/addFile/chat BFF for implicit per-chat KB; GET index/show redirect (no management UI).

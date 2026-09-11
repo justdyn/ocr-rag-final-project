@@ -14,7 +14,19 @@ import {
 
 const MOCK_TOKEN = 'chat-step.jwt.token'
 
+type ChatUpstreamBody = {
+  query?: string
+  stream?: boolean
+  scope_id?: string
+  attachment_file_ids?: string[]
+}
+
 let originalFetch = globalThis.fetch
+/** Mutable capture — object property so TS CFA does not freeze it to `null`. */
+let chatUpstream = {
+  body: null as ChatUpstreamBody | null,
+  attachmentFileIds: undefined as string[] | undefined,
+}
 
 async function sessionCookieHeader(token: string): Promise<string> {
   let session = await sessionStorage.read(null)
@@ -36,11 +48,9 @@ before(() => {
     }
 
     if (url.includes('/api/chat/completions') && method === 'POST') {
-      let body = JSON.parse(String(init?.body ?? '{}')) as {
-        query?: string
-        stream?: boolean
-        scope_id?: string
-      }
+      let body = JSON.parse(String(init?.body ?? '{}')) as ChatUpstreamBody
+      chatUpstream.body = body
+      chatUpstream.attachmentFileIds = body.attachment_file_ids
       if (body.query === 'trigger-503') {
         return Response.json(
           { detail: 'LLM_API_KEY is not set.' },
@@ -171,5 +181,30 @@ describe('knowledge chatStream proxy', () => {
     assert.match(body, /event: token/)
     assert.match(body, /event: done/)
     assert.match(body, /conv-1/)
+  })
+
+  it('forwards attachment_file_ids to the backend chat completions body', async () => {
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let href = routes.knowledge.chatStream.completions.href({
+      knowledgeId: 'kb-1',
+    })
+    chatUpstream.attachmentFileIds = undefined
+    let response = await router.fetch(
+      new Request(`http://localhost${href}`, {
+        method: 'POST',
+        headers: {
+          Cookie: cookie,
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify({
+          query: 'Summarize with files',
+          attachment_file_ids: ['file-a', '  ', 'file-b', 99, 'file-a'],
+        }),
+      }),
+    )
+    assert.equal(response.status, 200)
+    // Empty strings / non-strings dropped; duplicates kept in order (backend dedupes).
+    assert.deepEqual(chatUpstream.attachmentFileIds, ['file-a', 'file-b', 'file-a'])
   })
 })

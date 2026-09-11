@@ -2,6 +2,7 @@
  * Server-side props for unified chat shell sidebar + chat landing (data/, §2.1).
  */
 import {
+  getLastConversationScope,
   listKnowledgeConversations,
   loadKnowledgeChatHistory,
 } from './chat.ts'
@@ -31,10 +32,14 @@ export type ChatShellServerContext = {
 
 /**
  * Hydrate shell chrome for authenticated routes: optional URL knowledge,
- * sidebar conversations for that knowledge only, and optional chat thread.
+ * sidebar conversations, and optional chat thread.
  *
- * Never fall back to "first knowledge base" — leftover/manual KBs must not
- * become an unrelated new chat's sidebar or composer scope.
+ * Composer scope (`chatKnowledgeId`) only ever comes from `?knowledge=` —
+ * never auto-picked. Without `?knowledge=`, the sidebar alone hydrates from
+ * the user's last active knowledge (most recent conversation's KB) so the
+ * recent-chats list survives a full remount. Never the "first knowledge base"
+ * from the KB listing, and never a fallback for an explicit but unresolvable
+ * `?knowledge=`.
  */
 export async function loadChatShellServerContext(
   accessToken: string,
@@ -61,6 +66,16 @@ export async function loadChatShellServerContext(
 
   let activeKnowledgeId = chatKnowledgeId
   let activeKnowledgeName = chatKnowledgeName
+
+  // Sidebar-only hydrate: without `?knowledge=`, scope the recent-chats list
+  // to the user's last active knowledge. Composer scope stays null.
+  if (!opts.preferredKnowledgeId) {
+    let last = await getLastConversationScope(accessToken).catch(() => null)
+    if (last) {
+      activeKnowledgeId = last.knowledgeId
+      activeKnowledgeName = last.knowledgeName
+    }
+  }
 
   let conversations: ConversationSummary[] = []
   let activeConversationId: string | null = null

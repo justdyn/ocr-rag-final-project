@@ -44,6 +44,7 @@ async def chat_completions(
             query=body.query,
             conversation_id=body.conversation_id,
             k=body.k,
+            attachment_file_ids=body.attachment_file_ids,
         )
     except ChatServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc

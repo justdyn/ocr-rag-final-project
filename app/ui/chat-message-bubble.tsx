@@ -4,11 +4,10 @@
  */
 import type { Handle } from 'remix/ui'
 
+import { ChatMessageAttachments } from './chat-message-attachments.tsx'
 import { ChatCitationReveal } from './chat-citation-reveal.tsx'
-import {
-  segmentCitedContent,
-  sourceByCitationId,
-} from '../utils/chat-citations.ts'
+import { MarkdownRender } from './markdown-render.tsx'
+import { sourceByCitationId } from '../utils/chat-citations.ts'
 import type { ChatMessage } from '../utils/chat-types.ts'
 import { entranceFast, entranceUserBubble } from '../utils/motion.ts'
 import {
@@ -34,32 +33,33 @@ export function ChatMessageBubble(handle: Handle<ChatMessageBubbleProps>) {
       return (
         <li mix={userRowStyle}>
           <div mix={[userPillStyle, animateEntrance ? entranceUserBubble() : undefined]}>
+            {message.attachments?.length ? (
+              <ChatMessageAttachments attachments={message.attachments} />
+            ) : null}
             <p mix={userTextStyle}>{message.content}</p>
           </div>
         </li>
       )
     }
 
-    let segments = segmentCitedContent(message.content)
-
     return (
       <li mix={[assistantRowStyle, animateEntrance ? entranceFast() : undefined]}>
         <div mix={assistantProseStyle}>
-          {segments.map((segment, index) => {
-            if (segment.type === 'text') {
-              return <span key={`t-${index}`}>{segment.value}</span>
-            }
-            return (
-              <ChatCitationReveal
-                key={`c-${index}-${segment.id}`}
-                citationId={segment.id}
-                source={sourceByCitationId(message.sources, segment.id)}
-              />
-            )
-          })}
-          {!message.content ? (
+          {message.content ? (
+            <MarkdownRender
+              content={message.content}
+              keyPrefix={message.localId}
+              renderCitation={(id, key) => (
+                <ChatCitationReveal
+                  key={key}
+                  citationId={id}
+                  source={sourceByCitationId(message.sources, id)}
+                />
+              )}
+            />
+          ) : (
             <span mix={assistantPendingStyle}>Thinking…</span>
-          ) : null}
+          )}
           {message.incomplete ? (
             <span className="sr-only"> (response incomplete)</span>
           ) : null}

@@ -10,7 +10,6 @@ export const shellStyle = css({
   '--home-surface': '#f3f3f3',
   '--home-border': 'rgba(13, 13, 13, 0.05)',
   '--home-border-strong': 'rgba(0, 0, 0, 0.15)',
-  '--home-sidebar': '260px',
   '--home-ease-out': EASE_OUT_PREMIUM,
   '& *, & *::before, & *::after': { boxSizing: 'border-box' },
   '& .sr-only': {
@@ -25,7 +24,10 @@ export const shellStyle = css({
     border: 0,
   },
   display: 'flex',
-  minHeight: '100vh',
+  // Viewport-bound shell: the document never scrolls — the full-bleed chat
+  // region and the sidebar's conversation list own their own overflow-y.
+  height: '100dvh',
+  overflow: 'hidden',
   width: '100%',
   background: 'var(--home-bg)',
   color: 'var(--home-fg)',

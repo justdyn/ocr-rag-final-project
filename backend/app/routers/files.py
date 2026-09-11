@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse as BlobFileResponse
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +14,7 @@ from app.core.database import get_db
 from app.dependencies.auth import CurrentUser
 from app.schemas.files import FileResponse, FileStatusResponse
 from app.services.files import (
+    MIME_BY_EXTENSION,
     FileServiceError,
     create_file_from_upload,
     delete_file_for_user,
@@ -94,6 +97,37 @@ async def get_file_status(
     if file_row is None:
         raise HTTPException(status_code=404, detail="File not found")
     return _status_response(file_row)
+
+
+@router.get("/{file_id}/content")
+async def get_file_content(
+    file_id: str,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BlobFileResponse:
+    """Serve the stored blob for inline display (attachment thumbnails/modals).
+
+    Ownership-scoped: other users' files and missing blobs read as 404, never 500.
+    """
+    file_row = await get_file_for_user(db, user_id=current_user.id, file_id=file_id)
+    if file_row is None or not file_row.path:
+        raise HTTPException(status_code=404, detail="File not found")
+    blob = Path(file_row.path)
+    if not blob.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+    meta = file_row.meta or {}
+    extension = Path(file_row.filename).suffix.lower()
+    media_type = (
+        meta.get("content_type")
+        or MIME_BY_EXTENSION.get(extension)
+        or "application/octet-stream"
+    )
+    return BlobFileResponse(
+        blob,
+        media_type=media_type,
+        content_disposition_type="inline",
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
 @router.post("/{file_id}/process", response_model=FileResponse)

@@ -31,6 +31,9 @@ class Message(Base):
     sources: Mapped[list[dict[str, Any]] | dict[str, Any] | None] = mapped_column(
         JSON, nullable=True
     )
+    # Attachment snapshot resolved from owned files at send time
+    # ({file_id, filename, content_type, extraction_method, ocr_confidence, text_excerpt}).
+    attachments: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     conversation: Mapped[Conversation] = relationship(back_populates="messages")

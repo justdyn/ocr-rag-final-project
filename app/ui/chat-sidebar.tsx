@@ -26,6 +26,7 @@ import {
 import {
   iconButtonStyle,
   sidebarBackdropStyle,
+  sidebarConversationsStyle,
   sidebarFooterNavStyle,
   sidebarHeaderCollapsedStyle,
   sidebarHeaderStyle,
@@ -312,7 +313,9 @@ export const ChatSidebar = clientEntry(
               {authenticated && knowledgeId && conversations.length > 0 ? (
                 <nav
                   data-sidebar-nav=""
-                  mix={sidebarNavStyle}
+                  mix={sidebarConversationsStyle}
+                  // Internal sidebar scroller opts out of the root Lenis hijack (§4.3).
+                  data-lenis-prevent=""
                   aria-label={SHELL_COPY.conversations}
                 >
                   <p

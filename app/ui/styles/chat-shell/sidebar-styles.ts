@@ -25,7 +25,7 @@ export const sidebarTrackStyle = css({
     position: 'fixed',
     left: 0,
     top: 0,
-    height: '100vh',
+    height: '100dvh',
     zIndex: 50,
     maxWidth: `${SIDEBAR_WIDTH_PX}px`,
     width: `${SIDEBAR_WIDTH_PX}px`,
@@ -57,7 +57,7 @@ export const sidebarStyle = css({
   flexDirection: 'column',
   flexShrink: 0,
   width: `${SIDEBAR_WIDTH_PX}px`,
-  minHeight: '100vh',
+  height: '100%',
   background: 'var(--home-bg)',
   borderRight: '1px solid var(--home-border)',
   transform: 'translateX(0)',
@@ -85,7 +85,6 @@ export const sidebarStyle = css({
     },
   },
   [`@media (max-width: ${SIDEBAR_MOBILE_MAX_PX}px)`]: {
-    minHeight: '100vh',
     boxShadow: '4px 0 24px rgba(0, 0, 0, 0.08)',
     '&[data-open="false"]': {
       width: `${SIDEBAR_WIDTH_PX}px`,
@@ -137,6 +136,17 @@ export const sidebarNavStyle = css({
   flexDirection: 'column',
   gap: '1px',
   padding: '8px 6px 0',
+})
+
+/** Conversation list — the sidebar's internal scroller (header/footer/account stay pinned). */
+export const sidebarConversationsStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1px',
+  padding: '8px 6px 0',
+  flex: '1 1 auto',
+  minHeight: 0,
+  overflowY: 'auto',
 })
 
 export const sidebarSpacerStyle = css({ flex: '1 1 auto', minHeight: '24px' })
