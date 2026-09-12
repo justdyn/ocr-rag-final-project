@@ -55,8 +55,13 @@ globals.CSSStyleSheet = FakeCSSStyleSheet
 // --- dynamic imports after the shim -----------------------------------------
 let { render } = await import('@remix-run/ui/test')
 let { shellStyle } = await import('./styles/chat-shell/shell-styles.ts')
-let { chatScrollRegionStyle, chatThreadStyle, mainContentWideStyle, mainStyle } =
-  await import('./styles/chat-shell/main-styles.ts')
+let {
+  chatScrollRegionStyle,
+  chatThreadStyle,
+  composerDockStyle,
+  mainContentWideStyle,
+  mainStyle,
+} = await import('./styles/chat-shell/main-styles.ts')
 let { sidebarConversationsStyle, sidebarStyle } = await import(
   './styles/chat-shell/sidebar-styles.ts'
 )
@@ -71,6 +76,18 @@ function ruleFor(el: Element | null): string {
     .find((text) => text.includes(el.className))
   assert.ok(rule !== undefined, `css() rule found for .${el.className}`)
   return rule
+}
+
+/** All rules for one element's class, joined — empty-mode rules may be emitted
+ * as a nested block or a sibling rule; assertions must hold either way. */
+function joinedRuleText(el: Element): string {
+  let sheets = (dom.document as unknown as {
+    adoptedStyleSheets: { cssRules: { cssText: string }[] }[]
+  }).adoptedStyleSheets
+  return sheets
+    .flatMap((sheet) => sheet.cssRules.map((r) => r.cssText))
+    .filter((t) => t.includes(el.className))
+    .join('\n')
 }
 
 describe('chat shell — viewport-bound layout contract', () => {
@@ -99,6 +116,54 @@ describe('chat shell — viewport-bound layout contract', () => {
     assert.match(rule, /min-height:\s*0/, `region may shrink below content, got: ${rule}`)
     assert.match(rule, /width:\s*100%/, `region spans the main panel, got: ${rule}`)
     view.cleanup()
+  })
+
+  it('empty stage clusters hero + composer dock; in-thread region still grows', () => {
+    // Region: in-thread grows; empty stops growing with a TOP auto-margin only —
+    // margin-bottom:auto here would push the dock away and reopen the gap.
+    let regionView = render(<div mix={chatScrollRegionStyle} />)
+    let region = regionView.$('div')
+    assert.ok(region, 'region element exists')
+    let regionText = joinedRuleText(region)
+    assert.match(
+      regionText,
+      /flex:\s*1 1 auto/,
+      `in-thread: region grows, dock stays bottom, got: ${regionText}`,
+    )
+    assert.match(
+      regionText,
+      /data-empty="true"[\s\S]*?flex:\s*0 1 auto/,
+      `empty: region stops growing so hero hugs the dock, got: ${regionText}`,
+    )
+    assert.match(
+      regionText,
+      /data-empty="true"[\s\S]*?margin-top:\s*auto/,
+      `empty: region auto-margin opens space above the hero, got: ${regionText}`,
+    )
+    assert.doesNotMatch(
+      regionText,
+      /data-empty="true"[\s\S]*?margin-bottom:\s*auto/,
+      `empty: region must NOT claim margin-bottom:auto (dock owns it), got: ${regionText}`,
+    )
+    regionView.cleanup()
+
+    // Dock: empty carries the paired bottom auto-margin; base stays margin-free.
+    let dockView = render(<div mix={composerDockStyle} />)
+    let dock = dockView.$('div')
+    assert.ok(dock, 'dock element exists')
+    let dockText = joinedRuleText(dock)
+    assert.match(
+      dockText,
+      /data-empty="true"[\s\S]*?margin-bottom:\s*auto/,
+      `empty: dock auto-margin centers the hero+dock cluster, got: ${dockText}`,
+    )
+    let dockBase = dockText.split('[data-empty')[0]
+    assert.doesNotMatch(
+      dockBase,
+      /margin-bottom/,
+      `in-thread: dock has no auto margin, stays pinned bottom, got: ${dockBase}`,
+    )
+    dockView.cleanup()
   })
 
   it('empty-stage and thread hide styles only toggle display (always mounted)', async () => {

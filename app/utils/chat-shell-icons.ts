@@ -2,11 +2,14 @@ import {
   ArrowUp,
   ChevronDown,
   CircleHelp,
+  Ellipsis,
   FileText,
+  Library,
   LogOut,
   PanelLeft,
   PanelLeftClose,
   Plus,
+  Search,
   Settings,
   Sparkles,
   SquarePen,
@@ -21,6 +24,7 @@ export const SHELL_LUCIDE_ICON = {
   sidebarOpen: PanelLeft,
   sidebarClose: PanelLeftClose,
   newChat: SquarePen,
+  library: Library,
   plans: Sparkles,
   settings: Settings,
   help: CircleHelp,
@@ -31,6 +35,8 @@ export const SHELL_LUCIDE_ICON = {
   send: ArrowUp,
   file: FileText,
   remove: X,
+  search: Search,
+  more: Ellipsis,
 } as const satisfies Record<string, IconNode>
 
 export type ShellLucideIconKey = keyof typeof SHELL_LUCIDE_ICON

@@ -81,6 +81,20 @@ function uploadWithProgress(
   }
 }
 
+export async function fetchLibraryFiles(): Promise<FileRecord[] | null> {
+  try {
+    let response = await fetch(routes.files.list.href(), {
+      headers: { Accept: 'application/json' },
+      credentials: 'same-origin',
+    })
+    if (!response.ok) return null
+    let body = (await response.json()) as { files?: FileRecord[] }
+    return Array.isArray(body.files) ? body.files : null
+  } catch {
+    return null
+  }
+}
+
 export async function deleteLibraryFile(fileId: string): Promise<{ ok: boolean }> {
   try {
     let response = await fetch(routes.files.destroy.href({ fileId }), {

@@ -147,7 +147,10 @@ export const mainContentStyle = css({
 /**
  * Full-bleed chat scroller — owns overflow across the entire main panel so the
  * scrollbar sits on the right edge; message column stays centered inside.
- * data-empty="true": vertically center the hero (composer stays in the dock).
+ * data-empty="true": stop growing and auto-margin above only — the matching
+ * margin-bottom:auto lives on the dock (composerDockStyle) so hero and composer
+ * stay adjacent and the pair is centered (ChatGPT empty home); in-thread the
+ * region fills the panel and pins the dock to the bottom.
  */
 export const chatScrollRegionStyle = css({
   flex: '1 1 auto',
@@ -155,9 +158,8 @@ export const chatScrollRegionStyle = css({
   width: '100%',
   overflowY: 'auto',
   '&[data-empty="true"]': {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
+    flex: '0 1 auto',
+    marginTop: 'auto',
   },
 })
 
@@ -174,6 +176,12 @@ export const composerDockStyle = css({
   flexShrink: 0,
   width: '100%',
   padding: '0 0 8px',
+  // Empty home: bottom auto-margin pairs with the region's top auto-margin —
+  // free space splits above the hero and below the dock, keeping hero and
+  // composer adjacent. In-thread: no auto margin, dock stays pinned at bottom.
+  '&[data-empty="true"]': {
+    marginBottom: 'auto',
+  },
 })
 
 /** Empty-state hero stack inside the scroll region (composer lives in the dock). */

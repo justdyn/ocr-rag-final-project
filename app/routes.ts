@@ -10,9 +10,14 @@ export const routes = route({
   login: form('login'),
   register: form('register'),
   logout: post('logout'),
-  // Upload/status BFF for composer attach; GET index redirects (no library page).
+  // Owner file browser (hybrid Library) — RAG still chat-KB-scoped.
+  library: route({
+    index: get('/library'),
+  }),
+  // Upload/status/list BFF; GET index redirects to Library.
   files: route('files', {
     index: get('/'),
+    list: get('list'),
     upload: post('upload'),
     status: get(':fileId/status'),
     // Raw blob proxy for attachment thumbnails/modals (ownership enforced upstream).

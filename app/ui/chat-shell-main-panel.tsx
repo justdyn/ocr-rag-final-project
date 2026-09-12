@@ -42,6 +42,7 @@ import {
   dispatchConversationUpsert,
   NEW_CHAT_EVENT,
 } from '../utils/new-chat.ts'
+import { takePendingChatKnowledge } from '../utils/library-attach.ts'
 
 export interface ChatShellMainPanelProps extends SerializableProps {
   authenticated?: boolean
@@ -64,6 +65,19 @@ export const ChatShellMainPanel = clientEntry(
     // *props* scope we applied — never bump this for client-only advances (attach /
     // first message), or the next render would clobber them with stale SSR props.
     let appliedFromPropsKey = chatShellScopeKey(knowledgeId, conversationId)
+
+    // Library "Add to chat" stashes scope then soft-navs home — apply once on mount.
+    // Keep appliedFromPropsKey aligned with SSR props so the first render does not
+    // treat client-only scope as a stale mismatch and wipe it via applyServerScope.
+    let pendingScope = takePendingChatKnowledge()
+    if (pendingScope && !knowledgeId) {
+      knowledgeId = pendingScope.id
+      knowledgeName = pendingScope.name
+      appliedFromPropsKey = chatShellScopeKey(
+        handle.props.activeKnowledgeId,
+        handle.props.initialConversationId,
+      )
+    }
 
     let streaming = false
     let streamError: ChatStreamError | null = null
@@ -376,7 +390,7 @@ export const ChatShellMainPanel = clientEntry(
               </ul>
             </div>
           </div>
-          <div mix={composerDockStyle}>
+          <div mix={composerDockStyle} data-empty={showEmptyStage ? 'true' : 'false'}>
             <div mix={chatColumnStyle}>{composer}</div>
             <LegalFooter />
           </div>

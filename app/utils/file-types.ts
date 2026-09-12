@@ -5,6 +5,9 @@
 
 export type FileStatusValue = 'pending' | 'processing' | 'ready' | 'failed' | string
 
+/** JSON-safe meta bag for clientEntry hydration (no `unknown`). */
+export type FileMeta = Record<string, string | number | boolean | null>
+
 export type FileRecord = {
   id: string
   filename: string
@@ -12,7 +15,7 @@ export type FileRecord = {
   extraction_method: string | null
   ocr_confidence: number | null
   hash: string | null
-  meta: Record<string, unknown> | null
+  meta: FileMeta | null
   created_at: number
   updated_at: number
 }

@@ -28,7 +28,7 @@ export type ChatShellPageProps = {
   /** Logged-in user from /api/auth/me — sidebar account row. */
   userName?: string
   userEmail?: string
-  /** Optional slot for non-chat shell bodies (unused after Files/Knowledge removal). */
+  /** Optional slot for non-chat shell bodies (Library, etc.). */
   children?: RemixNode
 }
 
@@ -51,7 +51,10 @@ export function ChatShellPage(handle: Handle<ChatShellPageProps>) {
     } = handle.props
 
     let mainColumn = children ? (
-      <ChatShellContentMain authenticated={authenticated} knowledgeName={activeKnowledgeName}>
+      <ChatShellContentMain
+        authenticated={authenticated}
+        knowledgeName={activeNav === 'library' ? SHELL_COPY.library : activeKnowledgeName}
+      >
         {children}
       </ChatShellContentMain>
     ) : (

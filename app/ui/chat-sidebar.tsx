@@ -55,7 +55,7 @@ import {
 import { SidebarCta } from './chat-shell/sidebar-cta.tsx'
 import { SidebarNavItem } from './chat-shell/sidebar-nav-item.tsx'
 
-export type ShellActiveNav = 'chat'
+export type ShellActiveNav = 'chat' | 'library'
 
 export interface ChatSidebarProps extends SerializableProps {
   initialOpen?: boolean
@@ -80,6 +80,12 @@ function buildPrimaryNav(
       label: SHELL_COPY.newChat,
       active: activeNav === 'chat' && (!authenticated || !activeConversationId),
       resetChatOnSamePath: true,
+    },
+    {
+      href: routes.library.index.href(),
+      icon: SHELL_LUCIDE_ICON.library,
+      label: SHELL_COPY.library,
+      active: activeNav === 'library',
     },
   ]
 }

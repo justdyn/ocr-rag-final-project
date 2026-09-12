@@ -1,5 +1,5 @@
 /**
- * Files BFF after library-page removal: upload/status kept; GET /files redirects home.
+ * Files BFF: upload/status/list/content/delete; GET /files → /library.
  */
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
@@ -68,6 +68,10 @@ before(() => {
       return Response.json(row, { status: 201 })
     }
 
+    if (url.endsWith('/api/files') && method === 'GET') {
+      return Response.json(fileStore)
+    }
+
     let statusMatch = url.match(/\/api\/files\/([^/]+)\/status$/)
     if (statusMatch && method === 'GET') {
       let row = fileStore.find((f) => f.id === statusMatch[1])
@@ -114,24 +118,58 @@ after(() => {
   globalThis.fetch = originalFetch
 })
 
-describe('files BFF (no library page)', () => {
+describe('files BFF (library redirects + API)', () => {
   it('formatFileError maps tesseract_not_found to a human message', () => {
     assert.match(formatFileError('tesseract_not_found') ?? '', /Tesseract/i)
   })
 
-  it('GET /files redirects to home (library removed)', async () => {
+  it('GET /files redirects to library', async () => {
     let response = await router.fetch(new Request('http://localhost/files'))
     assert.equal(response.status, 303)
-    assert.equal(response.headers.get('Location'), routes.home.href())
+    assert.equal(response.headers.get('Location'), routes.library.index.href())
   })
 
-  it('GET /files redirects authenticated users to home too', async () => {
+  it('GET /files redirects authenticated users to library too', async () => {
     let cookie = await sessionCookieHeader(MOCK_TOKEN)
     let response = await router.fetch(
       new Request('http://localhost/files', { headers: { Cookie: cookie } }),
     )
     assert.equal(response.status, 303)
-    assert.equal(response.headers.get('Location'), routes.home.href())
+    assert.equal(response.headers.get('Location'), routes.library.index.href())
+  })
+
+  it('GET /files/list returns owner files JSON', async () => {
+    fileStore = [
+      {
+        id: 'file-a',
+        filename: 'a.pdf',
+        status: 'ready',
+        extraction_method: 'text_layer',
+        error: null,
+        meta: { content_type: 'application/pdf' },
+        created_at: 2,
+        updated_at: 2,
+        ocr_confidence: null,
+        hash: null,
+      },
+    ]
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let response = await router.fetch(
+      new Request('http://localhost/files/list', {
+        headers: { Cookie: cookie, Accept: 'application/json' },
+      }),
+    )
+    assert.equal(response.status, 200)
+    let body = (await response.json()) as { files: Array<{ id: string }> }
+    assert.equal(body.files.length, 1)
+    assert.equal(body.files[0]!.id, 'file-a')
+  })
+
+  it('GET /files/list redirects anonymous users to login', async () => {
+    let response = await router.fetch(new Request('http://localhost/files/list'))
+    assert.equal(response.status, 303)
+    let location = response.headers.get('Location') ?? ''
+    assert.ok(location.startsWith('/login'), `redirects to login, got: ${location}`)
   })
 
   it('POST /files/upload forwards multipart and returns the new file JSON', async () => {

@@ -1,6 +1,6 @@
 /**
- * Files BFF — upload + status for composer attach only.
- * GET /files redirects home (library page removed).
+ * Files BFF — upload/status/list/content/delete for composer + Library.
+ * GET /files redirects to /library.
  */
 import { createController } from 'remix/router'
 import { redirect } from 'remix/response/redirect'
@@ -10,6 +10,7 @@ import {
   FilesApiError,
   getFileContent,
   getFileStatus,
+  listFiles,
   uploadFile,
   type FileRecord,
 } from '../../data/files.ts'
@@ -31,7 +32,23 @@ function asUploadFile(value: FormDataEntryValue | null): File | null {
 export default createController(routes.files, {
   actions: {
     async index() {
-      return redirect(routes.home.href(), 303)
+      return redirect(routes.library.index.href(), 303)
+    },
+
+    async list({ session }) {
+      let auth = requireAuthFromSession(session, routes.library.index.href())
+      if (auth instanceof Response) return auth
+
+      try {
+        let files = await listFiles(auth)
+        return Response.json({ files })
+      } catch (error) {
+        if (error instanceof FilesApiError && error.status < 500) {
+          return Response.json({ error: error.message }, { status: error.status })
+        }
+        let message = error instanceof Error ? error.message : 'List files failed.'
+        return Response.json({ error: message }, { status: 502 })
+      }
     },
 
     async upload({ get, session }) {

@@ -7,6 +7,7 @@ import { uploadFormData } from './middleware/form-data.ts'
 import controller from './actions/controller.tsx'
 import chatController from './actions/chat/controller.tsx'
 import filesController from './actions/files/controller.tsx'
+import libraryController from './actions/library/controller.tsx'
 import knowledgeController from './actions/knowledge/controller.tsx'
 import knowledgeChatStreamController from './actions/knowledge/chat-stream/controller.tsx'
 import loginController from './actions/login/controller.tsx'
@@ -43,5 +44,6 @@ router.map(routes.chat, chatController)
 router.map(routes.login, loginController)
 router.map(routes.register, registerController)
 router.map(routes.files, filesController)
+router.map(routes.library, libraryController)
 router.map(routes.knowledge, knowledgeController)
 router.map(routes.knowledge.chatStream, knowledgeChatStreamController)
