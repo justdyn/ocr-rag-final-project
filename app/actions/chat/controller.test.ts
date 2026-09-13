@@ -82,6 +82,22 @@ before(() => {
       return Response.json({ detail: 'Conversation not found' }, { status: 404 })
     }
 
+    if (url.match(/\/api\/conversations\/[^/]+$/) && method === 'PATCH') {
+      assert.equal(method, 'PATCH')
+      assert.equal(
+        (init?.headers as Headers).get('Authorization'),
+        `Bearer ${MOCK_TOKEN}`,
+      )
+      let title = typeof body.title === 'string' ? body.title.trim() : ''
+      if (!title) {
+        return Response.json({ detail: 'Title cannot be empty' }, { status: 400 })
+      }
+      if (url.endsWith(`/api/conversations/${CONV.id}`)) {
+        return Response.json({ ...CONV, title, title_source: 'manual' })
+      }
+      return Response.json({ detail: 'Conversation not found' }, { status: 404 })
+    }
+
     if (url.endsWith(`/api/conversations/${CONV.id}/messages`) && method === 'GET') {
       return Response.json([
         {
@@ -168,6 +184,59 @@ describe('GET /chat/:conversationId', () => {
     assert.equal(response.status, 303)
     let location = response.headers.get('Location') ?? ''
     assert.ok(location.includes(routes.login.index.href()))
+  })
+})
+
+describe('PATCH /chat/:conversationId rename', () => {
+  it('proxies the rename with the bearer token and passes the upstream summary through', async () => {
+    let cookie = await loginCookie()
+    let response = await router.fetch(
+      new Request(
+        'http://localhost' + routes.chat.rename.href({ conversationId: CONV.id }),
+        {
+          method: 'PATCH',
+          headers: { cookie, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: '  Renamed Thread  ' }),
+        },
+      ),
+    )
+    assert.equal(response.status, 200)
+    let summary = (await response.json()) as { title: string; title_source: string }
+    assert.equal(summary.title, 'Renamed Thread')
+    assert.equal(summary.title_source, 'manual')
+  })
+
+  it('rejects an empty or whitespace title locally with 400', async () => {
+    let cookie = await loginCookie()
+    let response = await router.fetch(
+      new Request(
+        'http://localhost' + routes.chat.rename.href({ conversationId: CONV.id }),
+        {
+          method: 'PATCH',
+          headers: { cookie, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: '   ' }),
+        },
+      ),
+    )
+    assert.equal(response.status, 400)
+    let payload = (await response.json()) as { error?: string; detail?: string }
+    assert.ok(payload.error, 'expected local BFF 400, not upstream passthrough')
+  })
+
+  it('passes upstream 404 through for missing or not-owned conversations', async () => {
+    let cookie = await loginCookie()
+    let response = await router.fetch(
+      new Request(
+        'http://localhost' +
+          routes.chat.rename.href({ conversationId: 'missing-id' }),
+        {
+          method: 'PATCH',
+          headers: { cookie, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: 'x' }),
+        },
+      ),
+    )
+    assert.equal(response.status, 404)
   })
 })
 

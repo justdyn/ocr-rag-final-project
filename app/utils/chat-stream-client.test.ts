@@ -21,6 +21,7 @@ function stateWith(message: Partial<ChatMessage>): ChatStreamMutableState {
       } as ChatMessage,
     ],
     conversationId: null,
+    conversationTitle: null,
     streamError: null,
     animateLocalIds: new Set(),
   }
@@ -71,6 +72,25 @@ describe('applyChatSseFrame', () => {
     assert.equal(state.conversationId, 'c1')
     assert.equal(state.messages[0]!.messageId, 'm1')
     assert.equal(state.messages[0]!.incomplete, true)
+  })
+
+  it('title frame sets conversationTitle and can pin conversationId', () => {
+    let state = stateWith({})
+    applyChatSseFrame(
+      'title',
+      { conversation_id: 'c-title', title: '  BM25 Hybrid RAG  ' },
+      state,
+      0,
+    )
+    assert.equal(state.conversationId, 'c-title')
+    assert.equal(state.conversationTitle, 'BM25 Hybrid RAG')
+  })
+
+  it('title frame ignores blank titles', () => {
+    let state = stateWith({})
+    state.conversationTitle = 'kept'
+    applyChatSseFrame('title', { conversation_id: 'c1', title: '   ' }, state, 0)
+    assert.equal(state.conversationTitle, 'kept')
   })
 
   it('error maps a known code and flags partial content incomplete', () => {

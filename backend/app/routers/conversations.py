@@ -9,11 +9,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import CurrentUser
-from app.schemas.chat import ConversationSummary, LastConversationScope, MessageResponse
+from app.schemas.chat import (
+    ConversationSummary,
+    ConversationTitleUpdate,
+    LastConversationScope,
+    MessageResponse,
+)
 from app.services.conversations import (
     get_conversation_for_user,
     get_last_conversation_scope,
     list_messages_for_conversation,
+    rename_conversation,
 )
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
@@ -60,3 +66,25 @@ async def get_conversation_messages(
     if messages is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
     return messages
+
+
+@router.patch("/{conversation_id}", response_model=ConversationSummary)
+async def patch_conversation(
+    conversation_id: str,
+    body: ConversationTitleUpdate,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> ConversationSummary:
+    """Rename an owned conversation (404 if missing/not owned)."""
+    title = body.title.strip()
+    if not title:
+        raise HTTPException(status_code=400, detail="Title cannot be empty")
+    summary = await rename_conversation(
+        db,
+        user_id=current_user.id,
+        conversation_id=conversation_id,
+        title=title,
+    )
+    if summary is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return summary

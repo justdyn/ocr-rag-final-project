@@ -52,6 +52,8 @@ class ChatCompletionResponse(BaseModel):
 class ConversationSummary(BaseModel):
     id: str
     title: str | None = None
+    title_source: str = "auto"
+    title_generated_at: int | None = None
     knowledge_id: str | None = None
     created_at: int
     updated_at: int
@@ -59,11 +61,20 @@ class ConversationSummary(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ConversationTitleUpdate(BaseModel):
+    """PATCH /api/conversations/{id} body — empty string allowed here so the
+    router can strip + 400 it (schema min_length would 422 first)."""
+
+    title: str = Field(max_length=200)
+
+
 class KnowledgeConversationItem(BaseModel):
     """Lightweight KB conversation list row (no message bodies)."""
 
     id: str
     title: str | None = None
+    title_source: str = "auto"
+    title_generated_at: int | None = None
     created_at: int
     updated_at: int
 

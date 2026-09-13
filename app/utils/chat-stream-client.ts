@@ -64,6 +64,8 @@ export function chatErrorBannerCopy(error: ChatStreamError): {
 export type ChatStreamMutableState = {
   messages: ChatMessage[]
   conversationId: string | null
+  /** LLM title from SSE `title` frame (null until emitted). */
+  conversationTitle: string | null
   streamError: ChatStreamError | null
   animateLocalIds: Set<string>
 }
@@ -74,6 +76,18 @@ export function applyChatSseFrame(
   state: ChatStreamMutableState,
   assistantIndex: number,
 ): void {
+  // Title does not touch the assistant bubble — apply even if index is stale.
+  if (event === 'title') {
+    let payload = data as { conversation_id?: string; title?: string }
+    if (typeof payload.conversation_id === 'string' && payload.conversation_id) {
+      state.conversationId = payload.conversation_id
+    }
+    if (typeof payload.title === 'string' && payload.title.trim()) {
+      state.conversationTitle = payload.title.trim()
+    }
+    return
+  }
+
   if (assistantIndex < 0) return
   let current = state.messages[assistantIndex]!
 

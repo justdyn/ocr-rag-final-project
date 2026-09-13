@@ -113,6 +113,19 @@ export async function getConversation(
   return (await response.json()) as ConversationSummary
 }
 
+/** Rename an owned conversation; returns the upstream Response as-is (thin proxy). */
+export async function renameConversation(
+  accessToken: string,
+  conversationId: string,
+  title: string,
+): Promise<Response> {
+  return backendFetch(`/api/conversations/${conversationId}`, {
+    method: 'PATCH',
+    accessToken,
+    body: { title },
+  })
+}
+
 /** Ordered messages for an owned conversation; null if missing/not owned. */
 export async function getConversationMessages(
   accessToken: string,

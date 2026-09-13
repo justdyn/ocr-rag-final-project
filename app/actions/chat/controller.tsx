@@ -1,17 +1,51 @@
 /**
  * GET /chat/:conversationId — open conversation by path identity.
+ * PATCH /chat/:conversationId — rename proxy (thin; upstream status/body passthrough).
  */
 import { createController } from 'remix/router'
 import { redirect } from 'remix/response/redirect'
 
+import { renameConversation } from '../../data/chat.ts'
 import { loadChatShellServerContext } from '../../data/shell-context.ts'
 import { getAccessToken } from '../../middleware/session.ts'
+import { requireAuthFromSession } from '../../middleware/require-auth.ts'
 import { routes } from '../../routes.ts'
 import { loginHref } from '../../utils/login-href.ts'
 import { HomePage } from '../home-page.tsx'
 
+async function readJsonBody(request: Request): Promise<unknown> {
+  try {
+    return await request.json()
+  } catch {
+    return null
+  }
+}
+
 export default createController(routes.chat, {
   actions: {
+    async rename({ session, params, request }) {
+      let auth = requireAuthFromSession(session, routes.home.href())
+      if (auth instanceof Response) return auth
+
+      let body = (await readJsonBody(request)) as { title?: unknown } | null
+      let title = typeof body?.title === 'string' ? body.title.trim() : ''
+      if (!title) {
+        return Response.json(
+          { error: 'Enter a name for the conversation.' },
+          { status: 400 },
+        )
+      }
+
+      try {
+        return await renameConversation(auth, params.conversationId, title)
+      } catch {
+        return Response.json(
+          { error: 'Could not rename the conversation.' },
+          { status: 502 },
+        )
+      }
+    },
+
     async show({ session, render, params }) {
       let token = getAccessToken(session)
       if (!token) {

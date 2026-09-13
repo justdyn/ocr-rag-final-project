@@ -59,6 +59,9 @@ export type ChatStreamError = {
 export type ConversationSummary = {
   id: string
   title: string | null
+  /** Present after title-meta migration; older clients may omit. */
+  title_source?: string
+  title_generated_at?: number | null
   /** Present on conversation-by-id; KB list rows omit it. */
   knowledge_id?: string | null
   created_at: number

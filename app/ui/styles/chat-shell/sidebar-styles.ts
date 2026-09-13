@@ -186,6 +186,22 @@ export const sidebarItemLabelStyle = css({
   transition: SIDEBAR_LABEL_TRANSITION,
 })
 
+/** Inline rename input — swaps in for the label span while `editingId === row.id`. */
+export const sidebarItemRenameInputStyle = css({
+  flex: '1 1 auto',
+  minWidth: 0,
+  maxWidth: '200px',
+  margin: 0,
+  padding: '1px 5px',
+  font: 'inherit',
+  color: 'inherit',
+  background: 'transparent',
+  border: '1px solid var(--home-border-strong)',
+  borderRadius: '6px',
+  outline: 'none',
+  '&:focus-visible': { borderColor: 'var(--home-fg)' },
+})
+
 export const sidebarCtaStyle = css({
   marginTop: 'auto',
   padding: '21px 20px 20px',

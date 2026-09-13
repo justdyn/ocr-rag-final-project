@@ -27,6 +27,9 @@ class Conversation(Base):
         String(36), ForeignKey("knowledge.id", ondelete="SET NULL"), nullable=True, index=True
     )
     title: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # auto = system may overwrite (truncation or LLM); manual = user rename lock (P1)
+    title_source: Mapped[str] = mapped_column(String(16), nullable=False, default="auto")
+    title_generated_at: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
     updated_at: Mapped[int] = mapped_column(BigInteger, nullable=False)
 

@@ -40,6 +40,7 @@ from app.services.memory import (
     should_schedule_memory_extract,
 )
 from app.services.retrieval.query import QueryServiceError, run_query
+from app.services.title import generate_title_for_chat
 
 ProviderFactory = Callable[[], LLMProvider]
 
@@ -60,6 +61,10 @@ class ChatPrepared:
     sources: list[dict[str, Any]]
     query: str
     user_id: str
+    # True when title_source=auto and title_generated_at is still NULL
+    # (new conversation, or retry after a failed first attempt).
+    needs_title: bool = False
+    attachment_filenames: list[str] | None = None
 
 
 def _title_from_query(query: str) -> str:
@@ -139,7 +144,13 @@ async def _get_or_create_conversation(
     scope_type: str,
     scope_id: str,
     query: str,
-) -> Conversation:
+) -> tuple[Conversation, bool]:
+    """Return (conversation, needs_title).
+
+    needs_title is True when the system may still write an LLM title:
+    ``title_source == 'auto'`` and ``title_generated_at is None`` (covers create
+    and retry after a failed/timed-out first attempt).
+    """
     now = int(time.time())
     if conversation_id:
         convo = await db.scalar(
@@ -151,7 +162,8 @@ async def _get_or_create_conversation(
         if convo is None:
             raise ChatServiceError("not_found", "Conversation not found", 404)
         convo.updated_at = now
-        return convo
+        needs_title = convo.title_source == "auto" and convo.title_generated_at is None
+        return convo, needs_title
 
     knowledge_id = scope_id if scope_type == "knowledge" else None
     convo = Conversation(
@@ -159,12 +171,13 @@ async def _get_or_create_conversation(
         user_id=user_id,
         knowledge_id=knowledge_id,
         title=_title_from_query(query),
+        title_source="auto",
         created_at=now,
         updated_at=now,
     )
     db.add(convo)
     await db.flush()
-    return convo
+    return convo, True
 
 
 async def _load_history(
@@ -228,7 +241,7 @@ async def prepare_chat(
         raise ChatServiceError(exc.code, exc.message, exc.status_code) from exc
 
     chunks: list[QueryChunkResult] = retrieval.results
-    convo = await _get_or_create_conversation(
+    convo, needs_title = await _get_or_create_conversation(
         db,
         user_id=user_id,
         conversation_id=conversation_id,
@@ -266,6 +279,11 @@ async def prepare_chat(
     convo.updated_at = now
     await db.commit()
 
+    attachment_filenames = [
+        str(a["filename"])
+        for a in attachments
+        if isinstance(a.get("filename"), str) and a["filename"].strip()
+    ]
     prepared = ChatPrepared(
         conversation_id=convo.id,
         user_message_id=user_msg.id,
@@ -273,6 +291,8 @@ async def prepare_chat(
         sources=sources,
         query=query,
         user_id=user_id,
+        needs_title=needs_title,
+        attachment_filenames=attachment_filenames or None,
     )
     return prepared, provider
 
@@ -426,6 +446,26 @@ async def stream_chat_events(
         error_message=error_message,
         provider=provider,
     )
+    # Title gen awaits (short timeout) so the client gets a deterministic SSE
+    # frame before `done` — only on new conversations; fail soft on timeout.
+    title = await generate_title_for_chat(
+        needs_title=prepared.needs_title,
+        error_message=error_message,
+        user_id=prepared.user_id,
+        conversation_id=prepared.conversation_id,
+        user_text=prepared.query,
+        assistant_text=full_text,
+        attachment_filenames=prepared.attachment_filenames,
+        provider=provider,
+    )
+    if title:
+        yield format_sse(
+            "title",
+            {
+                "conversation_id": prepared.conversation_id,
+                "title": title,
+            },
+        )
     yield format_sse(
         "done",
         {
@@ -463,6 +503,17 @@ async def complete_chat_json(
         assistant_message_id=assistant.id,
         assistant_text=content,
         error_message=None,
+        provider=provider,
+    )
+    # Same once-logic as stream path (no SSE on JSON eval).
+    await generate_title_for_chat(
+        needs_title=prepared.needs_title,
+        error_message=None,
+        user_id=prepared.user_id,
+        conversation_id=prepared.conversation_id,
+        user_text=prepared.query,
+        assistant_text=content,
+        attachment_filenames=prepared.attachment_filenames,
         provider=provider,
     )
     return ChatCompletionResponse(

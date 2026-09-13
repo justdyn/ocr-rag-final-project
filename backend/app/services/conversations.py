@@ -6,6 +6,8 @@ No schema migration — uses existing ``conversation`` / ``message`` tables.
 
 from __future__ import annotations
 
+import time
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -60,6 +62,8 @@ async def list_conversations_for_knowledge(
         KnowledgeConversationItem(
             id=row.id,
             title=row.title,
+            title_source=row.title_source,
+            title_generated_at=row.title_generated_at,
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -111,6 +115,31 @@ async def get_conversation_for_user(
     )
     if convo is None or convo.user_id != user_id:
         return None
+    return ConversationSummary.model_validate(convo)
+
+
+async def rename_conversation(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    conversation_id: str,
+    title: str,
+) -> ConversationSummary | None:
+    """Owner-scoped rename; ``title_source='manual'`` locks out auto titles.
+
+    404-not-403 at the router: other users' threads must not leak. Leaves
+    ``title_generated_at`` untouched so provenance survives manual edits.
+    """
+    convo = await db.scalar(
+        select(Conversation).where(Conversation.id == conversation_id)
+    )
+    if convo is None or convo.user_id != user_id:
+        return None
+    convo.title = title
+    convo.title_source = "manual"
+    convo.updated_at = int(time.time())
+    await db.commit()
+    await db.refresh(convo)
     return ConversationSummary.model_validate(convo)
 
 

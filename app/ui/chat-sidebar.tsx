@@ -35,6 +35,7 @@ import {
   sidebarSpacerStyle,
   sidebarStyle,
   sidebarItemLabelStyle,
+  sidebarItemRenameInputStyle,
   sidebarItemStyle,
   sidebarItemActiveStyle,
   sidebarTrackStyle,
@@ -116,6 +117,10 @@ export const ChatSidebar = clientEntry(
     // Soft-nav reuses this clientEntry — sync only when SSR props change, not when
     // client upsert/new-chat advances setup-scope ahead of still-stale props.
     let appliedFromPropsKey = chatShellScopeKey(knowledgeId, activeConversationId)
+    // Inline rename (P1): dblclick a row label → edit in place. Local upsert only —
+    // dispatchConversationUpsert would wrongly activate the renamed row.
+    let editingId: string | null = null
+    let renameInputEl: HTMLInputElement | null = null
     // Starts false so the first authenticated render (login 303 new mount) applies
     // the viewport default. After that, lastAuthenticated tracks props so already-auth
     // navigations do not re-open a sidebar the user closed.
@@ -127,6 +132,45 @@ export const ChatSidebar = clientEntry(
       // Opacity fade — expandCollapse height anim is for in-flow panels, not absolute menus.
       handle.queueTask(() => {
         if (accountMenuEl) animateMenuFade(accountMenuEl, next)
+      })
+    }
+
+    // Optimistic rename commit (Enter/blur). Cancel = exit only; revert restores the
+    // pre-PATCH row snapshot. Same-origin PATCH through the BFF (routes.chat.rename).
+    function commitRename(id: string, rawTitle: string) {
+      if (editingId !== id) return
+      let row = conversations.find((item) => item.id === id)
+      if (!row) {
+        editingId = null
+        handle.update()
+        return
+      }
+      let title = rawTitle.trim()
+      if (!title || title === (row.title ?? '').trim()) {
+        // Empty → cancel (BFF 400s on blank anyway); unchanged → exit without PATCH.
+        editingId = null
+        handle.update()
+        return
+      }
+      let previous = { ...row }
+      conversations = upsertConversationList(
+        conversations,
+        { ...row, title, title_source: 'manual' },
+        false,
+      )
+      editingId = null
+      handle.update()
+      fetch(routes.chat.rename.href({ conversationId: id }), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+        credentials: 'same-origin',
+      }).then((response) => {
+        if (response.ok) return
+        throw new Error(`rename failed: ${response.status}`)
+      }).catch(() => {
+        conversations = upsertConversationList(conversations, previous, false)
+        handle.update()
       })
     }
 
@@ -167,6 +211,12 @@ export const ChatSidebar = clientEntry(
       }
       let onKeyDown = (event: KeyboardEvent) => {
         if (event.key !== 'Escape') return
+        // Editing owns Esc first — cancel rename instead of closing the sidebar.
+        if (editingId !== null) {
+          editingId = null
+          handle.update()
+          return
+        }
         if (accountMenuOpen) {
           setAccountMenuOpen(false)
           return
@@ -333,6 +383,7 @@ export const ChatSidebar = clientEntry(
                   {conversations.map((row) => {
                     let href = shellChatHref(row.id)
                     let active = activeConversationId === row.id && activeNav === 'chat'
+                    let editing = editingId === row.id
                     return (
                       <a
                         key={row.id}
@@ -340,11 +391,56 @@ export const ChatSidebar = clientEntry(
                         data-sidebar-item=""
                         aria-label={conversationLabel(row)}
                         title={conversationLabel(row)}
-                        mix={[sidebarItemStyle, active ? sidebarItemActiveStyle : undefined]}
+                        mix={[
+                          sidebarItemStyle,
+                          active ? sidebarItemActiveStyle : undefined,
+                          on('click', (event) => {
+                            // Swallow navigation while this row is being renamed.
+                            if (editingId === row.id) event.preventDefault()
+                          }),
+                          on('dblclick', () => {
+                            editingId = row.id
+                            handle.update()
+                            handle.queueTask(() => {
+                              renameInputEl?.focus()
+                              renameInputEl?.select()
+                            })
+                          }),
+                        ]}
                       >
-                        <span data-sidebar-label="" mix={sidebarItemLabelStyle}>
-                          {conversationLabel(row)}
-                        </span>
+                        {editing ? (
+                          <input
+                            type="text"
+                            defaultValue={row.title ?? ''}
+                            maxLength={200}
+                            aria-label="Rename conversation"
+                            data-sidebar-label=""
+                            mix={[
+                              sidebarItemRenameInputStyle,
+                              ref((node) => {
+                                renameInputEl = node as HTMLInputElement
+                              }),
+                              on('keydown', (event) => {
+                                if (event.key !== 'Enter') return
+                                event.preventDefault()
+                                commitRename(
+                                  row.id,
+                                  (event.target as HTMLInputElement).value,
+                                )
+                              }),
+                              on('blur', (event) => {
+                                commitRename(
+                                  row.id,
+                                  (event.target as HTMLInputElement).value,
+                                )
+                              }),
+                            ]}
+                          />
+                        ) : (
+                          <span data-sidebar-label="" mix={sidebarItemLabelStyle}>
+                            {conversationLabel(row)}
+                          </span>
+                        )}
                       </a>
                     )
                   })}

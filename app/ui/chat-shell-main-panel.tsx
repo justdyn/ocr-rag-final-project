@@ -207,31 +207,40 @@ export const ChatShellMainPanel = clientEntry(
 
       let priorConversationId = conversationId
       let upsertedConversationId: string | null = null
+      let lastUpsertedTitle: string | null = null
       let state: ChatStreamMutableState = {
         messages,
         conversationId,
+        conversationTitle: null,
         streamError: null,
         animateLocalIds,
       }
 
       function maybeUpsertConversation() {
+        if (!knowledgeId || !state.conversationId) {
+          return
+        }
+        let isNewThread =
+          !priorConversationId || priorConversationId !== state.conversationId
+        // Resumed threads: ignore unless an LLM title frame arrives (shouldn't).
+        if (!isNewThread && state.conversationTitle == null) {
+          return
+        }
+        let title = state.conversationTitle ?? conversationTitleFromQuery(query)
         if (
-          !knowledgeId ||
-          !state.conversationId ||
-          upsertedConversationId === state.conversationId
+          upsertedConversationId === state.conversationId &&
+          lastUpsertedTitle === title
         ) {
           return
         }
-        if (priorConversationId && priorConversationId === state.conversationId) {
-          return
-        }
         upsertedConversationId = state.conversationId
+        lastUpsertedTitle = title
         let now = Math.floor(Date.now() / 1000)
         dispatchConversationUpsert({
           knowledgeId,
           conversation: {
             id: state.conversationId,
-            title: conversationTitleFromQuery(query),
+            title,
             created_at: now,
             updated_at: now,
           },
