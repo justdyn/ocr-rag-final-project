@@ -1,4 +1,5 @@
 import {
+  ArrowDown,
   ArrowUp,
   ChevronDown,
   CircleHelp,
@@ -31,6 +32,7 @@ export const SHELL_LUCIDE_ICON = {
   profile: User,
   logOut: LogOut,
   chevron: ChevronDown,
+  scrollBottom: ArrowDown,
   attach: Plus,
   send: ArrowUp,
   file: FileText,

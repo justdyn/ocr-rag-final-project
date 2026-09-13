@@ -60,7 +60,9 @@ let {
   chatThreadStyle,
   composerDockStyle,
   mainContentWideStyle,
+  mainHeaderStyle,
   mainStyle,
+  scrollFabStyle,
 } = await import('./styles/chat-shell/main-styles.ts')
 let { sidebarConversationsStyle, sidebarStyle } = await import(
   './styles/chat-shell/sidebar-styles.ts'
@@ -115,6 +117,56 @@ describe('chat shell — viewport-bound layout contract', () => {
     assert.match(rule, /overflow-y:\s*auto/, `region owns vertical scroll, got: ${rule}`)
     assert.match(rule, /min-height:\s*0/, `region may shrink below content, got: ${rule}`)
     assert.match(rule, /width:\s*100%/, `region spans the main panel, got: ${rule}`)
+    assert.match(
+      rule,
+      /padding-top:\s*52px/,
+      `region clears the overlay chips at rest, got: ${rule}`,
+    )
+    view.cleanup()
+  })
+
+  it('glass header overlays the thread as a transparent bar (chat-only)', () => {
+    let view = render(<header mix={mainHeaderStyle} data-glass="true" />)
+    let header = view.$('header')
+    assert.ok(header, 'header element exists')
+    let text = joinedRuleText(header)
+    let glassAt = text.indexOf('[data-glass="true"]')
+    assert.ok(
+      glassAt !== -1,
+      `overlay rules must be gated behind [data-glass="true"], got: ${text}`,
+    )
+    let base = text.slice(0, glassAt)
+    assert.match(
+      base,
+      /background:\s*var\(--home-bg\)/,
+      `library header stays in-flow opaque, got: ${base}`,
+    )
+    let glass = text.slice(glassAt)
+    assert.match(
+      glass,
+      /data-glass="true"\][\s\S]*?position:\s*absolute/,
+      `glass header leaves document flow over the scroller, got: ${glass}`,
+    )
+    assert.match(
+      glass,
+      /data-glass="true"\][\s\S]*?top:\s*0/,
+      `glass header pins to the panel top, got: ${glass}`,
+    )
+    assert.match(
+      glass,
+      /data-glass="true"\][\s\S]*?left:\s*0[\s\S]*?right:\s*0/,
+      `glass header spans the panel, got: ${glass}`,
+    )
+    assert.match(
+      glass,
+      /data-glass="true"\][\s\S]*?background:\s*transparent/,
+      `glass header bar is transparent so thread text shows through, got: ${glass}`,
+    )
+    assert.doesNotMatch(
+      glass,
+      /backdrop-filter/,
+      `header bar never samples the moving thread (CV-6 spirit), got: ${glass}`,
+    )
     view.cleanup()
   })
 
@@ -157,13 +209,161 @@ describe('chat shell — viewport-bound layout contract', () => {
       /data-empty="true"[\s\S]*?margin-bottom:\s*auto/,
       `empty: dock auto-margin centers the hero+dock cluster, got: ${dockText}`,
     )
+    assert.match(
+      dockText,
+      /data-empty="false"[\s\S]*?position:\s*absolute/,
+      `in-thread: dock overlays scroller for glass, got: ${dockText}`,
+    )
     let dockBase = dockText.split('[data-empty')[0]
     assert.doesNotMatch(
       dockBase,
       /margin-bottom/,
-      `in-thread: dock has no auto margin, stays pinned bottom, got: ${dockBase}`,
+      `base dock has no auto margin, got: ${dockBase}`,
+    )
+    assert.match(
+      dockBase,
+      /(padding:\s*0(px)?\s+0(px)?\s+20px|padding-bottom:\s*20px)/,
+      `base dock keeps a 20px bottom inset so the composer is not cramped, got: ${dockBase}`,
     )
     dockView.cleanup()
+  })
+
+  it('in-thread scroll region reserves bottom padding for the absolute dock', () => {
+    let regionView = render(<div mix={chatScrollRegionStyle} />)
+    let region = regionView.$('div')
+    assert.ok(region, 'region element exists')
+    let regionText = joinedRuleText(region)
+    assert.match(
+      regionText,
+      /data-empty="false"[\s\S]*?padding-bottom:\s*162px/,
+      `in-thread: padding clears the footer-less dock stack, got: ${regionText}`,
+    )
+    regionView.cleanup()
+  })
+
+  it('scroll fab visibility is CSS-driven — data-visible makes it opaque and clickable', () => {
+    let view = render(<button mix={scrollFabStyle} />)
+    let fab = view.$('button')
+    assert.ok(fab, 'fab element exists')
+    let text = joinedRuleText(fab)
+    assert.match(
+      text,
+      /data-visible="true"[\s\S]*?opacity:\s*1/,
+      `CSS must show the fab even when Framer inline styles are gone, got: ${text}`,
+    )
+    assert.match(
+      text,
+      /data-visible="true"[\s\S]*?pointer-events:\s*auto/,
+      `CSS must keep the fab clickable even when Framer inline styles are gone, got: ${text}`,
+    )
+    view.cleanup()
+  })
+
+  it('in-thread dock underlay is fully opaque at the pill top (glass isolation)', () => {
+    let dockView = render(<div mix={composerDockStyle} />)
+    let dock = dockView.$('div')
+    assert.ok(dock, 'dock element exists')
+    let dockText = joinedRuleText(dock)
+    assert.match(
+      dockText,
+      /data-empty="false"[\s\S]*?rgba\(255,\s*255,\s*255,\s*1\)\s*72px/,
+      `gradient must reach full opacity at the 72px pill top so blur never samples the scroller, got: ${dockText}`,
+    )
+    dockView.cleanup()
+  })
+
+  it('composer pill is stable frost — never samples the moving thread', async () => {
+    let { composerPillStyle } = await import('./styles/chat-shell/composer-styles.ts')
+    let view = render(<div mix={composerPillStyle} />)
+    let pill = view.$('div')
+    assert.ok(pill, 'pill element exists')
+    let text = joinedRuleText(pill)
+    assert.doesNotMatch(
+      text,
+      /backdrop-filter/,
+      `pill must not backdrop-sample the scroller (CV-6 stable frost), got: ${text}`,
+    )
+    assert.match(
+      text,
+      /background:\s*rgba\(255,\s*255,\s*255,\s*0\.96\)/,
+      `pill fill is near-opaque stable frost, got: ${text}`,
+    )
+    view.cleanup()
+  })
+
+  it('chat glass chrome — solid page-color chips, no border/shadow, hover pinned, flat base hover intact', async () => {
+    let { headerSidebarOpenStyle, modelSelectorStyle } = await import(
+      './styles/chat-shell/main-styles.ts'
+    )
+    for (let style of [headerSidebarOpenStyle, modelSelectorStyle]) {
+      let view = render(<button mix={style} data-glass="true" />)
+      let chip = view.$('button')
+      assert.ok(chip, 'chip element exists')
+      let text = joinedRuleText(chip)
+      let glassAt = text.indexOf('data-glass="true"]')
+      assert.ok(
+        glassAt !== -1,
+        `glass rules must be gated behind [data-glass="true"], got: ${text}`,
+      )
+      let base = text.slice(0, glassAt)
+      assert.match(
+        base,
+        /&:hover[\s\S]*?background:\s*var\(--home-surface\)/,
+        `non-glass (library) flat hover preserved, got: ${base}`,
+      )
+      let glass = text.slice(glassAt)
+      assert.match(
+        glass,
+        /data-glass="true"\][\s\S]{0,120}?background:\s*var\(--home-bg\)/,
+        `idle chip is opaque page color (--home-bg), got: ${glass}`,
+      )
+      assert.match(
+        glass,
+        /:hover[\s\S]{0,120}?background:\s*var\(--home-bg\)/,
+        `glass hover stays pinned to page color (no surface flip), got: ${glass}`,
+      )
+      assert.match(
+        glass,
+        /:focus-visible[\s\S]{0,120}?background:\s*var\(--home-bg\)/,
+        `glass focus stays pinned to page color, got: ${glass}`,
+      )
+      assert.doesNotMatch(
+        glass,
+        /rgba\(255,\s*255,\s*255,\s*0\.72\)|0 0 0 1px|inset 0 1px/,
+        `no frost fill, hairline ring, or inset highlight on chips, got: ${glass}`,
+      )
+      assert.doesNotMatch(
+        glass,
+        /box-shadow:(?!\s*none)/,
+        `chips carry no box-shadow beyond the explicit none, got: ${glass}`,
+      )
+      assert.doesNotMatch(
+        glass,
+        /prefers-reduced-transparency/,
+        `solid page-color chips need no reduced-transparency fallback (YAGNI), got: ${glass}`,
+      )
+      assert.doesNotMatch(
+        glass,
+        /translateY\(-1px\)|rgba\(255,\s*255,\s*255,\s*0\.92\)/,
+        `no hover lift, no hover-strengthened frost, got: ${glass}`,
+      )
+      assert.doesNotMatch(
+        glass,
+        /backdrop-filter/,
+        `header chips are solid — never sample the thread (CV-6 spirit), got: ${glass}`,
+      )
+      view.cleanup()
+    }
+    let sidebarView = render(<button mix={headerSidebarOpenStyle} data-glass="true" />)
+    let sidebarChip = sidebarView.$('button')
+    assert.ok(sidebarChip, 'sidebar chip element exists')
+    let sidebarText = joinedRuleText(sidebarChip)
+    assert.match(
+      sidebarText,
+      /&:active\s*{\s*transform:\s*scale\(0\.96\)/,
+      'sidebar-open chip keeps its flat-base press scale',
+    )
+    sidebarView.cleanup()
   })
 
   it('empty-stage and thread hide styles only toggle display (always mounted)', async () => {

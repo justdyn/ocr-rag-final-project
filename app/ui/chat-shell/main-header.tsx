@@ -24,19 +24,23 @@ export type ShellMainHeaderProps = {
   authenticated?: boolean
   /** Active knowledge base name when in chat scope; falls back to model label. */
   knowledgeName?: string | null
+  /** Chat-surface frosted glass chrome; library/content headers stay flat. */
+  glassChrome?: boolean
 }
 
 export function ShellMainHeader(handle: Handle<ShellMainHeaderProps>) {
   return () => {
-    let { authenticated = false, knowledgeName = null } = handle.props
+    let { authenticated = false, knowledgeName = null, glassChrome = false } = handle.props
     let title = knowledgeName?.trim() || SHELL_COPY.modelName
+    let glass = glassChrome ? 'true' : undefined
 
     return (
-      <header mix={mainHeaderStyle}>
+      <header mix={mainHeaderStyle} data-glass={glass}>
         <div mix={headerLeadingStyle}>
           <button
             type="button"
             aria-label="Open sidebar"
+            data-glass={glass}
             mix={[
               headerSidebarOpenStyle,
               on('click', () => {
@@ -47,11 +51,21 @@ export function ShellMainHeader(handle: Handle<ShellMainHeaderProps>) {
             <LucideIcon icon={SHELL_LUCIDE_ICON.sidebarOpen} size={20} strokeWidth={1.75} />
           </button>
           {authenticated ? (
-            <span mix={modelSelectorStyle} aria-label="Active knowledge base">
+            <span
+              mix={modelSelectorStyle}
+              aria-label="Active knowledge base"
+              data-glass={glass}
+            >
               <span mix={modelNameStyle}>{title}</span>
             </span>
           ) : (
-            <button type="button" mix={modelSelectorStyle} aria-haspopup="listbox" disabled>
+            <button
+              type="button"
+              mix={modelSelectorStyle}
+              aria-haspopup="listbox"
+              disabled
+              data-glass={glass}
+            >
               <span mix={modelNameStyle}>{SHELL_COPY.modelName}</span>
               <LucideIcon icon={SHELL_LUCIDE_ICON.chevron} size={16} strokeWidth={1.75} />
             </button>

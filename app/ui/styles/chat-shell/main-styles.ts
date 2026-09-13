@@ -7,6 +7,8 @@ export const mainStyle = css({
   flexDirection: 'column',
   flex: '1 1 auto',
   minWidth: 0,
+  // Anchor for in-thread absolute composer dock (glass over thread).
+  position: 'relative',
   // No horizontal padding here — the thread scroller must be full-bleed so the
   // scrollbar sits on the main-panel right edge (ChatGPT pattern), not beside
   // the max-width message column. Padding lives on the centered inner column.
@@ -23,6 +25,16 @@ export const mainHeaderStyle = css({
   zIndex: 2,
   background: 'var(--home-bg)',
   gap: '8px',
+  // Chat-only overlay (glassChrome): the bar leaves document flow so the
+  // scroller runs full-height beneath it and thread text stays visible as it
+  // passes under the chips. Library headers (no data-glass) stay in-flow.
+  '&[data-glass="true"]': {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    background: 'transparent',
+  },
 })
 
 /** Toggle + title share one flex row so the mobile open control never overlaps Remix. */
@@ -33,6 +45,19 @@ export const headerLeadingStyle = css({
   minWidth: 0,
   flex: '1 1 auto',
 })
+
+/**
+ * Chat-only header chip (data-glass="true") — solid page-color material:
+ * opaque --home-bg fill, no hairline/ring/highlight/shadow. Hover and focus
+ * are pinned to the same fill so the chip never flips material over the
+ * transparent overlay bar; the base flat hover still serves non-glass
+ * (Library) chips.
+ */
+const glassChipSolid = {
+  background: 'var(--home-bg)',
+  boxShadow: 'none',
+  '&:hover, &:focus-visible': { background: 'var(--home-bg)' },
+}
 
 /** Mobile-only open control — desktop uses the in-sidebar collapse controls. */
 export const headerSidebarOpenStyle = css({
@@ -53,6 +78,7 @@ export const headerSidebarOpenStyle = css({
   transition: 'background-color 150ms var(--home-ease-out), transform 120ms var(--home-ease-out)',
   '&:hover, &:focus-visible': { background: 'var(--home-surface)', outline: 'none' },
   '&:active': { transform: 'scale(0.96)' },
+  '&[data-glass="true"]': glassChipSolid,
   [`@media (min-width: ${SIDEBAR_DESKTOP_MIN_PX}px)`]: { display: 'none' },
 })
 
@@ -72,6 +98,7 @@ export const modelSelectorStyle = css({
   font: 'inherit',
   transition: 'background-color 150ms var(--home-ease-out)',
   '&:hover, &:focus-visible': { background: 'var(--home-surface)', outline: 'none' },
+  '&[data-glass="true"]': glassChipSolid,
 })
 
 export const modelNameStyle = css({
@@ -157,6 +184,15 @@ export const chatScrollRegionStyle = css({
   minHeight: 0,
   width: '100%',
   overflowY: 'auto',
+  // Clear the overlay chips at rest (header is absolute when glassChrome);
+  // also keeps empty-mode hero+composer centering identical to the in-flow
+  // header it replaced. Content scrolls under the transparent bar.
+  paddingTop: '52px',
+  // Clear the absolute in-thread dock so the last bubbles stay readable.
+  '&[data-empty="false"]': {
+    // Dock stack ≈ gradient pad (28) + controls (44) + pill (54) + dock pad (20).
+    paddingBottom: '162px',
+  },
   '&[data-empty="true"]': {
     flex: '0 1 auto',
     marginTop: 'auto',
@@ -171,17 +207,125 @@ export const chatColumnStyle = css({
   padding: '0 15px',
 })
 
-/** Pins composer + legal footer below the thread scroller — always mounted. */
+/**
+ * Composer + controls + legal footer — always mounted.
+ * Empty: in-flow with bottom auto-margin (pairs with region top auto-margin).
+ * In-thread: absolute over the scroller so glass can refract message content
+ * (not viewport `position: fixed` — see prd-chat-viewport).
+ */
 export const composerDockStyle = css({
   flexShrink: 0,
   width: '100%',
-  padding: '0 0 8px',
-  // Empty home: bottom auto-margin pairs with the region's top auto-margin —
-  // free space splits above the hero and below the dock, keeping hero and
-  // composer adjacent. In-thread: no auto margin, dock stays pinned at bottom.
+  // 20px bottom inset keeps the composer off the viewport edge (was 8px).
+  padding: '0 0 20px',
+  zIndex: 3,
+  '&[data-empty="false"]': {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    marginBottom: 0,
+    // Glass isolation (CV-6): px stops, fully opaque at 72px = the pill top
+    // (28px pad + 44px controls, height-independent). Above that, a soft fade;
+    // below it, the pill's backdrop-filter samples only this dock — never the
+    // moving scroller content — so the glass reads stable.
+    background:
+      'linear-gradient(180deg, rgba(255, 255, 255, 0) 0px, rgba(255, 255, 255, 0.6) 40px, rgba(255, 255, 255, 1) 72px)',
+    paddingTop: '28px',
+  },
   '&[data-empty="true"]': {
     marginBottom: 'auto',
   },
+})
+
+/** Stack for ↓ fab + generating dots above the composer pill. */
+export const dockControlsStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '8px',
+  width: '100%',
+  marginBottom: '8px',
+  minHeight: '36px',
+  '&[data-empty="true"]': {
+    display: 'none',
+  },
+})
+
+export const scrollFabStyle = css({
+  appearance: 'none',
+  border: '1px solid rgba(0, 0, 0, 0.1)',
+  margin: 0,
+  width: '36px',
+  height: '36px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: '9999px',
+  background: 'rgba(255, 255, 255, 0.78)',
+  backdropFilter: 'blur(16px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+  color: 'var(--home-fg)',
+  cursor: 'pointer',
+  boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+  opacity: 0,
+  transform: 'translateY(8px) scale(0.85)',
+  pointerEvents: 'none',
+  transition: 'background-color 150ms var(--home-ease-out)',
+  // Visibility is CSS-driven (CV-4) so the fab stays clickable even when a
+  // soft-nav re-render drops Framer's inline styles; animateScrollFab is a
+  // spring enhancement on top.
+  '&[data-visible="true"]': {
+    opacity: 1,
+    transform: 'none',
+    pointerEvents: 'auto',
+  },
+  '&:hover, &:focus-visible': {
+    background: 'rgba(255, 255, 255, 0.92)',
+    outline: 'none',
+  },
+  '&:active': { transform: 'scale(0.96)' },
+  '@media (prefers-reduced-transparency: reduce)': {
+    background: 'var(--home-bg)',
+    backdropFilter: 'none',
+    WebkitBackdropFilter: 'none',
+  },
+})
+
+export const generatingIndicatorStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '5px',
+  height: '28px',
+  padding: '0 12px',
+  borderRadius: '9999px',
+  background: 'rgba(255, 255, 255, 0.72)',
+  backdropFilter: 'blur(16px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(16px) saturate(160%)',
+  border: '1px solid rgba(255, 255, 255, 0.45)',
+  boxShadow: '0 1px 8px rgba(0, 0, 0, 0.06)',
+  opacity: 0,
+  pointerEvents: 'none',
+  visibility: 'hidden',
+  '&[data-visible="true"]': {
+    opacity: 1,
+    visibility: 'visible',
+  },
+  '@media (prefers-reduced-transparency: reduce)': {
+    background: 'var(--home-bg)',
+    backdropFilter: 'none',
+    WebkitBackdropFilter: 'none',
+  },
+})
+
+export const generatingDotStyle = css({
+  width: '6px',
+  height: '6px',
+  borderRadius: '9999px',
+  background: 'var(--home-subtle)',
+  opacity: 0.45,
+  flexShrink: 0,
 })
 
 /** Empty-state hero stack inside the scroll region (composer lives in the dock). */
@@ -222,30 +366,6 @@ export const heroHeadingStyle = css({
   lineHeight: '28px',
   letterSpacing: '0.07px',
   color: 'var(--home-fg)',
-})
-
-export const legalFooterStyle = css({
-  flexShrink: 0,
-  marginTop: 'auto',
-  padding: '8px 8px 24px',
-  textAlign: 'center',
-  '& p': {
-    margin: 0,
-    fontSize: '14px',
-    lineHeight: '14px',
-    color: 'var(--home-subtle)',
-    maxWidth: '42rem',
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
-})
-
-export const legalLinkStyle = css({
-  color: 'inherit',
-  textDecoration: 'underline',
-  textUnderlineOffset: '2px',
-  transition: 'color 150ms var(--home-ease-out)',
-  '&:hover, &:focus-visible': { color: 'var(--home-fg)', outline: 'none' },
 })
 
 /** Authenticated chat thread — grows with content; parent region scrolls. */

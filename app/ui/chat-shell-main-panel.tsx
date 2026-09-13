@@ -1,13 +1,14 @@
 /**
  * Main chat column — hero, thread, SSE send (app/ui/ clientEntry, §3.5).
  * Composer attach/implicit-KB lives in chat-shell-composer.tsx (§2.2).
+ * Viewport follow / ↓ / generating dots: .docs/prd-chat-viewport.md.
  */
 import { clientEntry, ref, type Handle, type SerializableProps } from 'remix/ui'
 
 import { routes } from '../routes.ts'
+import { ChatDockControls } from './chat-dock-controls.tsx'
 import { ChatMessageBubble } from './chat-message-bubble.tsx'
 import { ChatHero } from './chat-shell/chat-hero.tsx'
-import { LegalFooter } from './chat-shell/legal-footer.tsx'
 import { ShellMainHeader } from './chat-shell/main-header.tsx'
 import { ChatShellComposer } from './chat-shell-composer.tsx'
 import {
@@ -27,7 +28,16 @@ import {
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import { chatShellScopeKey } from '../utils/chat-shell-scope.ts'
 import { shellChatHref } from '../utils/chat-shell-urls.ts'
-import { animateScrollBottom } from '../utils/motion.ts'
+import {
+  createFollowScrollScheduler,
+  isNearBottom,
+  shouldEvaluateScroll,
+} from '../utils/chat-scroll.ts'
+import {
+  animateGeneratingDots,
+  animateScrollBottom,
+  animateScrollFab,
+} from '../utils/motion.ts'
 import {
   chatErrorBannerCopy,
   cloneInitialMessages,
@@ -67,8 +77,6 @@ export const ChatShellMainPanel = clientEntry(
     let appliedFromPropsKey = chatShellScopeKey(knowledgeId, conversationId)
 
     // Library "Add to chat" stashes scope then soft-navs home — apply once on mount.
-    // Keep appliedFromPropsKey aligned with SSR props so the first render does not
-    // treat client-only scope as a stale mismatch and wipe it via applyServerScope.
     let pendingScope = takePendingChatKnowledge()
     if (pendingScope && !knowledgeId) {
       knowledgeId = pendingScope.id
@@ -84,11 +92,29 @@ export const ChatShellMainPanel = clientEntry(
     let showScopePrompt = false
     let animateLocalIds = new Set<string>()
     let listEl: HTMLElement | null = null
+    let scrollFabEl: HTMLElement | null = null
+    let generatingEl: HTMLElement | null = null
+    let generatingDots: HTMLElement[] = []
     let abortController: AbortController | null = null
     let composerReset = 0
+    let shouldAutoFollow = true
+    let showScrollFab = false
+    let boundScrollNode: HTMLElement | null = null
+    let lastScrollTop: number | null = null
+
+    let followScroll = createFollowScrollScheduler({
+      getEl: () => listEl,
+      shouldFollow: () => shouldAutoFollow,
+      scrollToBottom: animateScrollBottom,
+    })
 
     handle.signal.addEventListener('abort', () => {
       abortController?.abort()
+      followScroll.cancel()
+      if (boundScrollNode) {
+        boundScrollNode.removeEventListener('scroll', onListScroll)
+        boundScrollNode = null
+      }
     })
 
     if (typeof window !== 'undefined') {
@@ -99,9 +125,59 @@ export const ChatShellMainPanel = clientEntry(
       })
     }
 
-    function scrollToBottom() {
+    function syncScrollFab(visible: boolean) {
+      if (showScrollFab === visible) return
+      showScrollFab = visible
+      handle.update()
       handle.queueTask(() => {
-        if (listEl) animateScrollBottom(listEl)
+        if (scrollFabEl) animateScrollFab(scrollFabEl, visible)
+      })
+    }
+
+    function onListScroll() {
+      if (!listEl) return
+      let top = listEl.scrollTop
+      // Our follow tween fires scroll events too, and lands short of the bottom
+      // when content grew mid-tween — skip ours, always honor user scroll-up.
+      let evaluate = shouldEvaluateScroll({
+        top,
+        lastTop: lastScrollTop,
+        isProgrammaticScroll: followScroll.isProgrammaticScroll(),
+      })
+      lastScrollTop = top
+      if (!evaluate) return
+      let near = isNearBottom(listEl)
+      shouldAutoFollow = near
+      syncScrollFab(!near && messages.length > 0)
+    }
+
+    function bindListScroll(node: HTMLElement) {
+      listEl = node
+      if (boundScrollNode === node) return
+      if (boundScrollNode) {
+        boundScrollNode.removeEventListener('scroll', onListScroll)
+      }
+      boundScrollNode = node
+      lastScrollTop = node.scrollTop
+      node.addEventListener('scroll', onListScroll, { passive: true })
+    }
+
+    function requestFollowScroll() {
+      handle.queueTask(() => followScroll.schedule())
+    }
+
+    function jumpToBottom() {
+      shouldAutoFollow = true
+      syncScrollFab(false)
+      handle.queueTask(() => followScroll.followNow())
+    }
+
+    function syncGeneratingIndicator(active: boolean) {
+      handle.queueTask(() => {
+        if (generatingEl) {
+          generatingEl.dataset.visible = active ? 'true' : 'false'
+        }
+        animateGeneratingDots(generatingDots, active)
       })
     }
 
@@ -117,9 +193,10 @@ export const ChatShellMainPanel = clientEntry(
       messages = cloneInitialMessages(props.initialMessages ?? [])
       appliedFromPropsKey = chatShellScopeKey(knowledgeId, conversationId)
       composerReset += 1
-      // The full-bleed chat region owns scroll now (root Lenis no longer resets
-      // document scroll for us) — a soft-nav into another conversation starts pinned low.
-      if (messages.length > 0) scrollToBottom()
+      shouldAutoFollow = true
+      syncScrollFab(false)
+      syncGeneratingIndicator(false)
+      if (messages.length > 0) requestFollowScroll()
     }
 
     function resetToNewChat() {
@@ -132,8 +209,9 @@ export const ChatShellMainPanel = clientEntry(
       messages = []
       streamError = null
       showScopePrompt = false
-      // Acknowledge current props so this clear is not undone by stale SSR props
-      // before soft-nav to `/` delivers empty ones.
+      shouldAutoFollow = true
+      syncScrollFab(false)
+      syncGeneratingIndicator(false)
       appliedFromPropsKey = chatShellScopeKey(
         handle.props.activeKnowledgeId,
         handle.props.initialConversationId,
@@ -162,7 +240,6 @@ export const ChatShellMainPanel = clientEntry(
         return
       }
 
-      // Attach path is the only way to get a knowledgeId (implicit auto-KB).
       if (!knowledgeId) {
         showScopePrompt = true
         handle.update()
@@ -172,9 +249,10 @@ export const ChatShellMainPanel = clientEntry(
       streamError = null
       showScopePrompt = false
       streaming = true
+      shouldAutoFollow = true
+      syncScrollFab(false)
+      syncGeneratingIndicator(true)
 
-      // Optimistic snapshot: file_id/filename only — server metadata (MIME,
-      // extraction, excerpt) fills in after reload/soft-nav re-apply.
       let attachments = sent.map((row) => ({
         file_id: row.fileId,
         filename: row.filename,
@@ -200,7 +278,7 @@ export const ChatShellMainPanel = clientEntry(
       animateLocalIds.add(assistantMsg.localId)
       messages = [...messages, userMsg, assistantMsg]
       handle.update()
-      scrollToBottom()
+      requestFollowScroll()
 
       abortController?.abort()
       abortController = new AbortController()
@@ -222,7 +300,6 @@ export const ChatShellMainPanel = clientEntry(
         }
         let isNewThread =
           !priorConversationId || priorConversationId !== state.conversationId
-        // Resumed threads: ignore unless an LLM title frame arrives (shouldn't).
         if (!isNewThread && state.conversationTitle == null) {
           return
         }
@@ -261,8 +338,6 @@ export const ChatShellMainPanel = clientEntry(
             conversationId = state.conversationId
             streamError = state.streamError
             maybeUpsertConversation()
-            // Pin conversation into the URL as soon as SSE reveals it (sources),
-            // not only after `done` — F5 during "Thinking…" must still hydrate.
             if (state.conversationId) {
               window.history.replaceState(
                 null,
@@ -271,7 +346,7 @@ export const ChatShellMainPanel = clientEntry(
               )
             }
             handle.update()
-            scrollToBottom()
+            requestFollowScroll()
           },
         })
         messages = state.messages
@@ -284,6 +359,7 @@ export const ChatShellMainPanel = clientEntry(
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
           streaming = false
+          syncGeneratingIndicator(false)
           handle.update()
           return
         }
@@ -294,12 +370,12 @@ export const ChatShellMainPanel = clientEntry(
       }
 
       streaming = false
+      syncGeneratingIndicator(false)
       handle.update()
-      scrollToBottom()
+      requestFollowScroll()
     }
 
     return () => {
-      // Props update on soft-nav without setup re-running (Remix clientEntry reuse).
       let propScopeKey = chatShellScopeKey(
         handle.props.activeKnowledgeId,
         handle.props.initialConversationId,
@@ -312,9 +388,6 @@ export const ChatShellMainPanel = clientEntry(
         authenticated &&
         (messages.length > 0 || Boolean(knowledgeId && conversationId))
       let banner = streamError ? chatErrorBannerCopy(streamError) : null
-      // Empty stage = no thread yet. Keep the same DOM hosts either way —
-      // swapping trees (composer parent, fragment vs <main>) double-mounts
-      // nested clientEntry on F5 / soft-nav (handoff §6).
       let showEmptyStage = !inChatMode
 
       let composer = (
@@ -336,16 +409,16 @@ export const ChatShellMainPanel = clientEntry(
           <ShellMainHeader
             authenticated={authenticated}
             knowledgeName={knowledgeName}
+            glassChrome
           />
           <div
             mix={[
               chatScrollRegionStyle,
               ref((node) => {
-                listEl = node as HTMLElement
+                if (node) bindListScroll(node as HTMLElement)
               }),
             ]}
             data-empty={showEmptyStage ? 'true' : 'false'}
-            // Nested scroller opts out of the root Lenis hijack (§4.3).
             data-lenis-prevent=""
           >
             <div mix={chatColumnStyle}>
@@ -353,8 +426,6 @@ export const ChatShellMainPanel = clientEntry(
                 mix={showEmptyStage ? emptyStageStyle : emptyStageHiddenStyle}
                 aria-hidden={showEmptyStage ? undefined : 'true'}
               >
-                {/* Always mount hero — hide via parent data/CSS when in-thread.
-                    Scope prompt is overlay content, not a chrome swap. */}
                 <div
                   mix={showScopePrompt ? emptyStageHiddenStyle : undefined}
                   aria-hidden={showScopePrompt ? 'true' : undefined}
@@ -400,8 +471,24 @@ export const ChatShellMainPanel = clientEntry(
             </div>
           </div>
           <div mix={composerDockStyle} data-empty={showEmptyStage ? 'true' : 'false'}>
-            <div mix={chatColumnStyle}>{composer}</div>
-            <LegalFooter />
+            <div mix={chatColumnStyle}>
+              <ChatDockControls
+                showScrollFab={showScrollFab}
+                streaming={streaming}
+                empty={showEmptyStage}
+                onJumpToBottom={jumpToBottom}
+                onScrollFabRef={(el) => {
+                  scrollFabEl = el
+                }}
+                onGeneratingRef={(el) => {
+                  generatingEl = el
+                }}
+                onDotRef={(index, el) => {
+                  if (el) generatingDots[index] = el
+                }}
+              />
+              {composer}
+            </div>
           </div>
         </div>
       )

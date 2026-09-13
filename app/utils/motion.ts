@@ -53,11 +53,34 @@ export function entranceUserBubble() {
 /**
  * Pin a nested scroller (the full-bleed chat region) to its bottom with a short tween.
  * Lenis owns document scroll (§4.1) — nested overflow regions animate their own
- * scrollTop via framer-motion/dom instead of raw jumps. Reduced motion = instant
- * jump (§5.4). One animation per element: restart retargets from the current
- * position during streaming instead of stacking competing tweens.
+ * scrollTop instead of raw jumps. Framer cannot animate DOM `scrollTop` as a
+ * style property (`animate(el, { scrollTop })` is a silent no-op), so we tween
+ * the number and assign it in `onUpdate`. Reduced motion = instant jump (§5.4).
+ * One animation per element: restart retargets from the current position to the
+ * latest bottom during streaming instead of stacking competing tweens.
  */
 let activeScrollAnims = new WeakMap<HTMLElement, { stop(): void }>()
+
+/** Bottom scrollTop of a scroller (the browser clamps to this value). */
+export function scrollBottomTarget(el: {
+  scrollHeight: number
+  clientHeight: number
+}): number {
+  return el.scrollHeight - el.clientHeight
+}
+
+/** Node-test seam — framer's rAF loop can't run in node; tests swap a fake. */
+export const scrollTweenRef: {
+  current: (
+    from: number,
+    to: number,
+    durationSec: number,
+    onUpdate: (value: number) => void,
+  ) => { stop(): void }
+} = {
+  current: (from, to, durationSec, onUpdate) =>
+    animate(from, to, { duration: durationSec, onUpdate }),
+}
 
 export function animateScrollBottom(el: HTMLElement): void {
   if (prefersReducedMotion()) {
@@ -65,8 +88,49 @@ export function animateScrollBottom(el: HTMLElement): void {
     return
   }
   activeScrollAnims.get(el)?.stop()
-  let controls = animate(el, { scrollTop: el.scrollHeight }, { duration: 0.2 })
+  let controls = scrollTweenRef.current(
+    el.scrollTop,
+    scrollBottomTarget(el),
+    0.2,
+    (value) => {
+      el.scrollTop = value
+    },
+  )
   activeScrollAnims.set(el, controls)
+}
+
+/**
+ * ↓ fab show/hide — CSS owns visibility through `data-visible` (scrollFabStyle,
+ * CV-4). No inline opacity/pointer-events: Framer's inline writes overrode the
+ * `[data-visible]` CSS contract, leaving the fab stuck hidden or unclickable.
+ */
+export function animateScrollFab(el: HTMLElement, visible: boolean): void {
+  el.dataset.visible = visible ? 'true' : 'false'
+}
+
+/** Staggered 3-dot pulse while streaming; reduced motion leaves dots static. */
+let generatingDotControls: { stop(): void }[] = []
+
+export function animateGeneratingDots(dots: HTMLElement[], active: boolean): void {
+  for (let c of generatingDotControls) c.stop()
+  generatingDotControls = []
+  for (let dot of dots) {
+    dot.style.opacity = '0.45'
+    dot.style.transform = 'none'
+  }
+  if (!active || prefersReducedMotion() || dots.length === 0) return
+  generatingDotControls = dots.map((dot, index) =>
+    animate(
+      dot,
+      { opacity: [0.35, 1, 0.35], scale: [0.85, 1, 0.85] },
+      {
+        duration: 0.9,
+        repeat: Infinity,
+        ease: 'easeInOut',
+        delay: index * 0.15,
+      },
+    ),
+  )
 }
 
 /** Short press scale via framer-motion/dom. */

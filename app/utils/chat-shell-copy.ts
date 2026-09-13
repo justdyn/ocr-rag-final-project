@@ -38,4 +38,6 @@ export const SHELL_COPY = {
   libraryAddToChat: 'Add to chat',
   libraryAttachOk: 'Added to chat — opening composer…',
   libraryDeleteConfirm: 'Delete this file permanently? This cannot be undone.',
+  scrollToBottom: 'Scroll to bottom',
+  generating: 'Generating response',
 } as const

@@ -14,13 +14,18 @@ export const composerPillStyle = css({
   width: '100%',
   borderRadius: '28px',
   overflow: 'hidden',
-  background: 'var(--home-bg)',
+  // Stable frost under grayscale §3.5 (prd-chat-viewport CV-6): no
+  // backdrop-filter — blur(24px) sampled the moving thread and animated
+  // inside the pill. Near-opaque fill over the dock underlay reads as
+  // glass (border + inset highlight + shadow) without live bleed.
+  background: 'rgba(255, 255, 255, 0.96)',
+  border: '1px solid rgba(255, 255, 255, 0.55)',
   boxShadow:
-    '0 0 1px rgba(0, 0, 0, 0.62), 0 3px 6px rgba(0, 0, 0, 0.04), 0 4px 80px 8px rgba(0, 0, 0, 0.04)',
+    '0 0 1px rgba(0, 0, 0, 0.5), 0 3px 6px rgba(0, 0, 0, 0.04), 0 4px 80px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.65)',
   transition: 'box-shadow 200ms var(--home-ease-out)',
   '&:focus-within': {
     boxShadow:
-      '0 0 1px rgba(0, 0, 0, 0.72), 0 4px 12px rgba(0, 0, 0, 0.06), 0 8px 96px 12px rgba(0, 0, 0, 0.05)',
+      '0 0 1px rgba(0, 0, 0, 0.62), 0 4px 12px rgba(0, 0, 0, 0.06), 0 8px 96px 12px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.75)',
   },
 })
 
