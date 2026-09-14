@@ -27,6 +27,7 @@ export default createController(routes.knowledge.chatStream, {
         conversation_id?: unknown
         k?: unknown
         attachment_file_ids?: unknown
+        model?: unknown
       } | null
 
       let query = typeof body?.query === 'string' ? body.query.trim() : ''
@@ -41,6 +42,10 @@ export default createController(routes.knowledge.chatStream, {
       let k =
         typeof body?.k === 'number' && Number.isFinite(body.k)
           ? Math.trunc(body.k)
+          : undefined
+      let model =
+        typeof body?.model === 'string' && body.model.trim()
+          ? body.model.trim()
           : undefined
 
       // Untrusted client list — backend ownership-filters; we only normalize shape.
@@ -59,6 +64,7 @@ export default createController(routes.knowledge.chatStream, {
           conversation_id: conversationId,
           k,
           attachment_file_ids: attachmentFileIds,
+          model,
         }, request.signal)
       } catch (error) {
         let message =

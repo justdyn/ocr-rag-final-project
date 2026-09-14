@@ -130,6 +130,6 @@ class OpenAICompatibleProvider:
             return content
 
 
-def get_llm_provider() -> OpenAICompatibleProvider:
+def get_llm_provider(*, model: str | None = None) -> OpenAICompatibleProvider:
     """Factory used by the chat service. Swap here to add future providers."""
-    return OpenAICompatibleProvider()
+    return OpenAICompatibleProvider(model=model)

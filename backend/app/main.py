@@ -13,6 +13,7 @@ from app.routers import (
     health,
     knowledge,
     memory,
+    models,
     query,
 )
 
@@ -41,6 +42,7 @@ def create_app() -> FastAPI:
         application.include_router(memory.router)
     application.include_router(query.router)
     application.include_router(chat.router)
+    application.include_router(models.router)
     return application
 
 

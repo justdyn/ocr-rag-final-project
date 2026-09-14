@@ -10,6 +10,10 @@ import { ChatDockControls } from './chat-dock-controls.tsx'
 import { ChatMessageBubble } from './chat-message-bubble.tsx'
 import { ChatHero } from './chat-shell/chat-hero.tsx'
 import { ShellMainHeader } from './chat-shell/main-header.tsx'
+import {
+  ChatModelSelector,
+  type ModelOption,
+} from './chat-shell/model-selector.tsx'
 import { ChatShellComposer } from './chat-shell-composer.tsx'
 import {
   chatColumnStyle,
@@ -26,6 +30,10 @@ import {
   shellAlertStyle,
 } from './styles/chat-shell/main-styles.ts'
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
+import {
+  readPreferredChatModel,
+  writePreferredChatModel,
+} from '../utils/chat-model-preference.ts'
 import { chatShellScopeKey } from '../utils/chat-shell-scope.ts'
 import { shellChatHref } from '../utils/chat-shell-urls.ts'
 import {
@@ -59,6 +67,8 @@ export interface ChatShellMainPanelProps extends SerializableProps {
   activeKnowledgeId?: string | null
   activeKnowledgeName?: string | null
   initialConversationId?: string | null
+  /** Hydrated generalist model id for an open thread. */
+  initialLlmModel?: string | null
   initialMessages?: ChatMessage[]
 }
 
@@ -70,6 +80,12 @@ export const ChatShellMainPanel = clientEntry(
     let knowledgeId: string | null = handle.props.activeKnowledgeId ?? null
     let knowledgeName: string | null = handle.props.activeKnowledgeName ?? null
     let conversationId: string | null = handle.props.initialConversationId ?? null
+    let preferred = readPreferredChatModel()
+    let selectedModelId: string | null =
+      handle.props.initialLlmModel?.trim() || preferred?.id || null
+    let selectedModelLabel: string =
+      handle.props.initialLlmModel?.trim() || preferred?.name || ''
+    let modelPickerOpen = false
     let messages: ChatMessage[] = cloneInitialMessages(handle.props.initialMessages ?? [])
     // Soft-nav reuses this clientEntry and only patches handle.props. Track the last
     // *props* scope we applied — never bump this for client-only advances (attach /
@@ -190,6 +206,15 @@ export const ChatShellMainPanel = clientEntry(
       knowledgeId = props.activeKnowledgeId ?? null
       knowledgeName = props.activeKnowledgeName ?? null
       conversationId = props.initialConversationId ?? null
+      let fromThread = props.initialLlmModel?.trim() || null
+      if (fromThread) {
+        selectedModelId = fromThread
+        selectedModelLabel = fromThread
+      } else {
+        let keep = readPreferredChatModel()
+        selectedModelId = keep?.id || selectedModelId
+        selectedModelLabel = keep?.name || selectedModelLabel
+      }
       messages = cloneInitialMessages(props.initialMessages ?? [])
       appliedFromPropsKey = chatShellScopeKey(knowledgeId, conversationId)
       composerReset += 1
@@ -206,6 +231,12 @@ export const ChatShellMainPanel = clientEntry(
       knowledgeId = null
       knowledgeName = null
       conversationId = null
+      // Keep latest selected model on New chat / empty `/` (MS-8).
+      let keep = readPreferredChatModel()
+      if (keep) {
+        selectedModelId = keep.id
+        selectedModelLabel = keep.name
+      }
       messages = []
       streamError = null
       showScopePrompt = false
@@ -217,6 +248,47 @@ export const ChatShellMainPanel = clientEntry(
         handle.props.initialConversationId,
       )
       composerReset += 1
+      handle.update()
+    }
+
+    function onModelSelect(model: ModelOption) {
+      selectedModelId = model.id
+      selectedModelLabel = model.name
+      writePreferredChatModel(model)
+      handle.update()
+      if (!conversationId) return
+      void fetch(routes.chat.rename.href({ conversationId }), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ llm_model: model.id }),
+      }).catch(() => {
+        /* selection still applies to next send even if PATCH fails */
+      })
+    }
+
+    function onCatalogHint(model: ModelOption) {
+      let id = model.id.trim()
+      if (!id) return
+      if (!selectedModelId) {
+        selectedModelId = id
+        selectedModelLabel = model.name.trim() || id
+        writePreferredChatModel({ id: selectedModelId, name: selectedModelLabel })
+        handle.update()
+        return
+      }
+      if (selectedModelId === id) {
+        let name = model.name.trim() || id
+        if (name !== selectedModelLabel) {
+          selectedModelLabel = name
+          writePreferredChatModel({ id, name })
+          handle.update()
+        }
+      }
+    }
+
+    function onModelPickerOpenChange(open: boolean) {
+      if (modelPickerOpen === open) return
+      modelPickerOpen = open
       handle.update()
     }
 
@@ -329,6 +401,7 @@ export const ChatShellMainPanel = clientEntry(
           knowledgeId,
           query,
           conversationId,
+          model: selectedModelId,
           attachmentFileIds: sent.map((row) => row.fileId),
           state,
           assistantLocalId: assistantMsg.localId,
@@ -405,11 +478,25 @@ export const ChatShellMainPanel = clientEntry(
       )
 
       return (
-        <div mix={mainStyle}>
+        <div
+          mix={mainStyle}
+          data-model-picker-open={modelPickerOpen ? 'true' : 'false'}
+        >
           <ShellMainHeader
             authenticated={authenticated}
-            knowledgeName={knowledgeName}
             glassChrome
+            modelControl={
+              authenticated ? (
+                <ChatModelSelector
+                  glassChrome
+                  selectedModelId={selectedModelId}
+                  selectedModelLabel={selectedModelLabel}
+                  onSelect={onModelSelect}
+                  onCatalogHint={onCatalogHint}
+                  onOpenChange={onModelPickerOpenChange}
+                />
+              ) : undefined
+            }
           />
           <div
             mix={[
@@ -470,7 +557,12 @@ export const ChatShellMainPanel = clientEntry(
               </ul>
             </div>
           </div>
-          <div mix={composerDockStyle} data-empty={showEmptyStage ? 'true' : 'false'}>
+          <div
+            mix={composerDockStyle}
+            data-composer-dock=""
+            data-empty={showEmptyStage ? 'true' : 'false'}
+            aria-hidden={modelPickerOpen ? 'true' : undefined}
+          >
             <div mix={chatColumnStyle}>
               <ChatDockControls
                 showScrollFab={showScrollFab}

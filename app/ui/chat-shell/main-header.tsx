@@ -1,8 +1,8 @@
 /**
- * Shell top bar — guest login/signup, or KB title. Authenticated sign-out lives in sidebar.
+ * Shell top bar — guest login/signup, or model/title control.
  * Mobile: sidebar-open toggle + title share one flex row (no FAB collision).
  */
-import { on, type Handle } from 'remix/ui'
+import { on, type Handle, type RemixNode } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
 import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'
@@ -22,15 +22,22 @@ import { LucideIcon } from './lucide-icon.tsx'
 
 export type ShellMainHeaderProps = {
   authenticated?: boolean
-  /** Active knowledge base name when in chat scope; falls back to model label. */
+  /** Non-interactive title (Library / content). Ignored when modelControl is set. */
   knowledgeName?: string | null
+  /** Interactive model picker for the chat surface. */
+  modelControl?: RemixNode
   /** Chat-surface frosted glass chrome; library/content headers stay flat. */
   glassChrome?: boolean
 }
 
 export function ShellMainHeader(handle: Handle<ShellMainHeaderProps>) {
   return () => {
-    let { authenticated = false, knowledgeName = null, glassChrome = false } = handle.props
+    let {
+      authenticated = false,
+      knowledgeName = null,
+      modelControl = null,
+      glassChrome = false,
+    } = handle.props
     let title = knowledgeName?.trim() || SHELL_COPY.modelName
     let glass = glassChrome ? 'true' : undefined
 
@@ -50,12 +57,10 @@ export function ShellMainHeader(handle: Handle<ShellMainHeaderProps>) {
           >
             <LucideIcon icon={SHELL_LUCIDE_ICON.sidebarOpen} size={20} strokeWidth={1.75} />
           </button>
-          {authenticated ? (
-            <span
-              mix={modelSelectorStyle}
-              aria-label="Active knowledge base"
-              data-glass={glass}
-            >
+          {modelControl ? (
+            modelControl
+          ) : authenticated ? (
+            <span mix={modelSelectorStyle} aria-label="Page title" data-glass={glass}>
               <span mix={modelNameStyle}>{title}</span>
             </span>
           ) : (

@@ -13,6 +13,15 @@ export const mainStyle = css({
   // scrollbar sits on the main-panel right edge (ChatGPT pattern), not beside
   // the max-width message column. Padding lives on the centered inner column.
   overflow: 'hidden',
+  // Picker open: header stacks above the dock (dock is sibling z-index 3) and
+  // the composer is hidden so soft-keyboard search cannot collide with the list.
+  '&[data-model-picker-open="true"] > header': {
+    zIndex: 5,
+  },
+  '&[data-model-picker-open="true"] > [data-composer-dock]': {
+    visibility: 'hidden',
+    pointerEvents: 'none',
+  },
 })
 
 export const mainHeaderStyle = css({
@@ -101,12 +110,102 @@ export const modelSelectorStyle = css({
   '&[data-glass="true"]': glassChipSolid,
 })
 
+export const modelSelectorWrapStyle = css({
+  position: 'relative',
+  display: 'inline-flex',
+  alignItems: 'center',
+  maxWidth: 'min(420px, 70vw)',
+})
+
+export const modelDropdownStyle = css({
+  position: 'absolute',
+  top: 'calc(100% + 6px)',
+  left: 0,
+  zIndex: 40,
+  width: 'min(360px, 86vw)',
+  padding: '8px',
+  borderRadius: '12px',
+  border: '1px solid var(--home-border)',
+  background: 'var(--home-bg)',
+  boxShadow: '0 12px 40px rgba(15, 23, 42, 0.12)',
+  display: 'none',
+  flexDirection: 'column',
+  gap: '8px',
+  '&[data-open="true"]': { display: 'flex' },
+})
+
+export const modelSearchStyle = css({
+  appearance: 'none',
+  width: '100%',
+  margin: 0,
+  border: '1px solid var(--home-border)',
+  borderRadius: '8px',
+  padding: '8px 10px',
+  background: 'var(--home-bg)',
+  color: 'var(--home-fg)',
+  font: 'inherit',
+  fontSize: '14px',
+  lineHeight: '20px',
+  '&:focus-visible': { outline: '2px solid var(--home-fg)', outlineOffset: '1px' },
+})
+
+export const modelListStyle = css({
+  // Cap at 280px on desktop; on short / keyboard-shrunk viewports fit under the
+  // header (52) + gaps/search chrome (~144) so the list stays usable.
+  maxHeight: 'min(280px, calc(100dvh - 52px - 144px))',
+  overflowY: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2px',
+  '& [data-status]': {
+    padding: '10px 8px',
+    fontSize: '13px',
+    color: 'var(--home-muted)',
+  },
+})
+
+export const modelOptionStyle = css({
+  appearance: 'none',
+  border: 0,
+  margin: 0,
+  width: '100%',
+  textAlign: 'left',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2px',
+  padding: '8px 10px',
+  borderRadius: '8px',
+  background: 'transparent',
+  color: 'var(--home-fg)',
+  cursor: 'pointer',
+  font: 'inherit',
+  '&:hover, &:focus-visible': {
+    background: 'var(--home-surface)',
+    outline: 'none',
+  },
+  '&[data-selected="true"]': {
+    background: 'var(--home-surface)',
+  },
+  '& > span:last-child': {
+    fontSize: '12px',
+    lineHeight: '16px',
+    color: 'var(--home-muted)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+})
+
 export const modelNameStyle = css({
   fontFamily: 'Inter, "Segoe UI", system-ui, sans-serif',
   fontWeight: 600,
   fontSize: '18px',
   lineHeight: '28px',
   letterSpacing: '-0.27px',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  maxWidth: 'min(320px, 55vw)',
 })
 
 export const headerActionsStyle = css({

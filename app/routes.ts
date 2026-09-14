@@ -8,6 +8,10 @@ export const routes = route({
     show: get(':conversationId'),
     rename: patch(':conversationId'),
   }),
+  // Generalist LLM catalog proxy (auth; server LLM_* key).
+  models: route({
+    list: get('/models'),
+  }),
   login: form('login'),
   register: form('register'),
   logout: post('logout'),

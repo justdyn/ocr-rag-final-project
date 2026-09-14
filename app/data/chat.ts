@@ -14,6 +14,20 @@ export type ChatCompletionsBody = {
   k?: number
   /** Owned file ids to snapshot onto the persisted user message. */
   attachment_file_ids?: string[]
+  /** Optional generalist model id for this turn / new conversation. */
+  model?: string | null
+}
+
+export type ModelListItem = {
+  id: string
+  name: string
+}
+
+export type ModelsListPage = {
+  items: ModelListItem[]
+  next_offset: number | null
+  has_more: boolean
+  default_model: string
 }
 
 export type { ConversationSummary, PersistedMessage }
@@ -25,6 +39,14 @@ async function readDetail(response: Response): Promise<string> {
     return response.statusText || 'Request failed'
   } catch {
     return response.statusText || 'Request failed'
+  }
+}
+
+class BackendHttpError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
   }
 }
 
@@ -54,6 +76,7 @@ export async function proxyKnowledgeChatStream(
       ...(body.attachment_file_ids?.length
         ? { attachment_file_ids: body.attachment_file_ids }
         : {}),
+      ...(body.model?.trim() ? { model: body.model.trim() } : {}),
     },
   })
 
@@ -119,11 +142,40 @@ export async function renameConversation(
   conversationId: string,
   title: string,
 ): Promise<Response> {
+  return patchConversation(accessToken, conversationId, { title })
+}
+
+/** PATCH title and/or llm_model on an owned conversation. */
+export async function patchConversation(
+  accessToken: string,
+  conversationId: string,
+  body: { title?: string; llm_model?: string },
+): Promise<Response> {
   return backendFetch(`/api/conversations/${conversationId}`, {
     method: 'PATCH',
     accessToken,
-    body: { title },
+    body,
   })
+}
+
+/** Authenticated model catalog page (search + offset/limit). */
+export async function listModels(
+  accessToken: string,
+  opts: { q?: string | null; offset?: number; limit?: number } = {},
+): Promise<ModelsListPage> {
+  let params = new URLSearchParams()
+  if (opts.q?.trim()) params.set('q', opts.q.trim())
+  if (typeof opts.offset === 'number') params.set('offset', String(opts.offset))
+  if (typeof opts.limit === 'number') params.set('limit', String(opts.limit))
+  let qs = params.toString()
+  let response = await backendFetch(`/api/models${qs ? `?${qs}` : ''}`, {
+    method: 'GET',
+    accessToken,
+  })
+  if (!response.ok) {
+    throw new BackendHttpError(await readDetail(response), response.status)
+  }
+  return (await response.json()) as ModelsListPage
 }
 
 /** Ordered messages for an owned conversation; null if missing/not owned. */

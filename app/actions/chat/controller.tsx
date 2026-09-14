@@ -5,7 +5,7 @@
 import { createController } from 'remix/router'
 import { redirect } from 'remix/response/redirect'
 
-import { renameConversation } from '../../data/chat.ts'
+import { patchConversation, renameConversation } from '../../data/chat.ts'
 import { loadChatShellServerContext } from '../../data/shell-context.ts'
 import { getAccessToken } from '../../middleware/session.ts'
 import { requireAuthFromSession } from '../../middleware/require-auth.ts'
@@ -27,20 +27,44 @@ export default createController(routes.chat, {
       let auth = requireAuthFromSession(session, routes.home.href())
       if (auth instanceof Response) return auth
 
-      let body = (await readJsonBody(request)) as { title?: unknown } | null
-      let title = typeof body?.title === 'string' ? body.title.trim() : ''
-      if (!title) {
+      let body = (await readJsonBody(request)) as {
+        title?: unknown
+        llm_model?: unknown
+      } | null
+      let title =
+        typeof body?.title === 'string' ? body.title.trim() : undefined
+      let llmModel =
+        typeof body?.llm_model === 'string' ? body.llm_model.trim() : undefined
+
+      if (title !== undefined && !title) {
         return Response.json(
           { error: 'Enter a name for the conversation.' },
           { status: 400 },
         )
       }
+      if (title === undefined && !llmModel) {
+        return Response.json(
+          { error: 'Provide title and/or llm_model.' },
+          { status: 400 },
+        )
+      }
 
       try {
-        return await renameConversation(auth, params.conversationId, title)
+        if (title !== undefined && llmModel) {
+          return await patchConversation(auth, params.conversationId, {
+            title,
+            llm_model: llmModel,
+          })
+        }
+        if (llmModel) {
+          return await patchConversation(auth, params.conversationId, {
+            llm_model: llmModel,
+          })
+        }
+        return await renameConversation(auth, params.conversationId, title!)
       } catch {
         return Response.json(
-          { error: 'Could not rename the conversation.' },
+          { error: 'Could not update the conversation.' },
           { status: 502 },
         )
       }
@@ -73,6 +97,7 @@ export default createController(routes.chat, {
           chatKnowledgeId={shell.chatKnowledgeId}
           chatKnowledgeName={shell.chatKnowledgeName}
           activeConversationId={shell.activeConversationId}
+          initialLlmModel={shell.initialLlmModel}
           conversations={shell.conversations}
           initialMessages={shell.initialMessages}
           userName={shell.userName}

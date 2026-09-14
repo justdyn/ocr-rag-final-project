@@ -130,13 +130,37 @@ async def rename_conversation(
     404-not-403 at the router: other users' threads must not leak. Leaves
     ``title_generated_at`` untouched so provenance survives manual edits.
     """
+    return await update_conversation(
+        db,
+        user_id=user_id,
+        conversation_id=conversation_id,
+        title=title,
+    )
+
+
+async def update_conversation(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    conversation_id: str,
+    title: str | None = None,
+    llm_model: str | None = None,
+) -> ConversationSummary | None:
+    """Owner-scoped PATCH for title and/or llm_model.
+
+    Passing ``title`` (even after strip) sets ``title_source='manual'``.
+    ``llm_model`` stores the generalist id for subsequent generations.
+    """
     convo = await db.scalar(
         select(Conversation).where(Conversation.id == conversation_id)
     )
     if convo is None or convo.user_id != user_id:
         return None
-    convo.title = title
-    convo.title_source = "manual"
+    if title is not None:
+        convo.title = title
+        convo.title_source = "manual"
+    if llm_model is not None:
+        convo.llm_model = llm_model
     convo.updated_at = int(time.time())
     await db.commit()
     await db.refresh(convo)

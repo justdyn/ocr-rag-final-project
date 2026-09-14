@@ -64,6 +64,8 @@ export type ConversationSummary = {
   title_generated_at?: number | null
   /** Present on conversation-by-id; KB list rows omit it. */
   knowledge_id?: string | null
+  /** Per-conversation generalist model id; null → server LLM_MODEL. */
+  llm_model?: string | null
   created_at: number
   updated_at: number
 }

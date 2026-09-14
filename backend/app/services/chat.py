@@ -42,7 +42,7 @@ from app.services.memory import (
 from app.services.retrieval.query import QueryServiceError, run_query
 from app.services.title import generate_title_for_chat
 
-ProviderFactory = Callable[[], LLMProvider]
+ProviderFactory = Callable[..., LLMProvider]
 
 
 class ChatServiceError(Exception):
@@ -144,6 +144,7 @@ async def _get_or_create_conversation(
     scope_type: str,
     scope_id: str,
     query: str,
+    llm_model: str | None = None,
 ) -> tuple[Conversation, bool]:
     """Return (conversation, needs_title).
 
@@ -162,6 +163,8 @@ async def _get_or_create_conversation(
         if convo is None:
             raise ChatServiceError("not_found", "Conversation not found", 404)
         convo.updated_at = now
+        if llm_model is not None:
+            convo.llm_model = llm_model
         needs_title = convo.title_source == "auto" and convo.title_generated_at is None
         return convo, needs_title
 
@@ -172,6 +175,7 @@ async def _get_or_create_conversation(
         knowledge_id=knowledge_id,
         title=_title_from_query(query),
         title_source="auto",
+        llm_model=llm_model,
         created_at=now,
         updated_at=now,
     )
@@ -207,6 +211,7 @@ async def prepare_chat(
     conversation_id: str | None = None,
     k: int | None = None,
     attachment_file_ids: list[str] | None = None,
+    model: str | None = None,
     provider_factory: ProviderFactory | None = None,
 ) -> tuple[ChatPrepared, LLMProvider]:
     """Retrieve chunks, build prompt, ensure conversation + user message exist.
@@ -214,17 +219,15 @@ async def prepare_chat(
     Validates LLM config up front so streaming handlers fail before the SSE
     body starts when the key is missing.
     """
-    factory = provider_factory or get_llm_provider
-    provider = factory()
-    # Fail fast on missing key (OpenAICompatibleProvider.require_configured)
-    require = getattr(provider, "require_configured", None)
-    if callable(require):
-        try:
-            require()
-        except LLMConfigError as exc:
-            raise ChatServiceError("llm_not_configured", exc.message, 503) from exc
-
     settings = get_settings()
+    if not (settings.llm_api_key or "").strip():
+        raise ChatServiceError(
+            "llm_not_configured",
+            "LLM_API_KEY is not configured. Set it in the environment "
+            "(see backend/.env.example) before calling /api/chat/completions.",
+            503,
+        )
+
     top_k = k if k is not None else settings.chat_retrieval_k
 
     try:
@@ -248,7 +251,24 @@ async def prepare_chat(
         scope_type=scope_type,
         scope_id=scope_id,
         query=query,
+        llm_model=model,
     )
+    # request model → conversation.llm_model → settings.llm_model
+    resolved_model = model or convo.llm_model or settings.llm_model
+    if convo.llm_model is None:
+        convo.llm_model = resolved_model
+
+    if provider_factory is not None:
+        provider = provider_factory()
+    else:
+        provider = get_llm_provider(model=resolved_model)
+    require = getattr(provider, "require_configured", None)
+    if callable(require):
+        try:
+            require()
+        except LLMConfigError as exc:
+            raise ChatServiceError("llm_not_configured", exc.message, 503) from exc
+
     history = await _load_history(db, conversation_id=convo.id)
     memory_facts: list[str] | None = None
     if settings.user_memory_enabled:

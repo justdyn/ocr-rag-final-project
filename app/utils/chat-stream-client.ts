@@ -176,6 +176,7 @@ export async function runKnowledgeChatStream(params: {
   knowledgeId: string
   query: string
   conversationId: string | null
+  model?: string | null
   attachmentFileIds?: string[]
   state: ChatStreamMutableState
   assistantLocalId: string
@@ -199,6 +200,7 @@ export async function runKnowledgeChatStream(params: {
         ...(params.attachmentFileIds?.length
           ? { attachment_file_ids: params.attachmentFileIds }
           : {}),
+        ...(params.model?.trim() ? { model: params.model.trim() } : {}),
       }),
       signal,
     },

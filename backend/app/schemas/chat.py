@@ -2,11 +2,26 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 ScopeType = Literal["file", "knowledge"]
+
+_MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._\-/:]*$")
+
+
+def normalize_model_id(value: str | None) -> str | None:
+    """Return a sanitized model id or None when empty/invalid."""
+    if value is None:
+        return None
+    cleaned = value.strip()
+    if not cleaned:
+        return None
+    if len(cleaned) > 128 or not _MODEL_ID_RE.match(cleaned):
+        raise ValueError("Invalid model id")
+    return cleaned
 
 
 class ChatCompletionRequest(BaseModel):
@@ -24,6 +39,14 @@ class ChatCompletionRequest(BaseModel):
         le=50,
         description="Retrieval top-k; defaults to CHAT_RETRIEVAL_K",
     )
+    # Optional generalist model override (generation layer only).
+    model: str | None = Field(default=None, max_length=128)
+
+    @field_validator("model")
+    @classmethod
+    def _validate_model(cls, value: str | None) -> str | None:
+        return normalize_model_id(value)
+
 
 
 class ChatSource(BaseModel):
@@ -55,17 +78,27 @@ class ConversationSummary(BaseModel):
     title_source: str = "auto"
     title_generated_at: int | None = None
     knowledge_id: str | None = None
+    llm_model: str | None = None
     created_at: int
     updated_at: int
 
     model_config = {"from_attributes": True}
 
 
-class ConversationTitleUpdate(BaseModel):
-    """PATCH /api/conversations/{id} body — empty string allowed here so the
-    router can strip + 400 it (schema min_length would 422 first)."""
+class ConversationUpdate(BaseModel):
+    """PATCH /api/conversations/{id} — at least one field required at the router."""
 
-    title: str = Field(max_length=200)
+    title: str | None = Field(default=None, max_length=200)
+    llm_model: str | None = Field(default=None, max_length=128)
+
+    @field_validator("llm_model")
+    @classmethod
+    def _validate_llm_model(cls, value: str | None) -> str | None:
+        return normalize_model_id(value)
+
+
+# Backward-compatible alias used by older imports/tests.
+ConversationTitleUpdate = ConversationUpdate
 
 
 class KnowledgeConversationItem(BaseModel):

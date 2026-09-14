@@ -47,6 +47,7 @@ export default createController(routes, {
           chatKnowledgeId={shell.chatKnowledgeId}
           chatKnowledgeName={shell.chatKnowledgeName}
           activeConversationId={shell.activeConversationId}
+          initialLlmModel={shell.initialLlmModel}
           conversations={shell.conversations}
           initialMessages={shell.initialMessages}
           userName={shell.userName}

@@ -11,6 +11,7 @@ import libraryController from './actions/library/controller.tsx'
 import knowledgeController from './actions/knowledge/controller.tsx'
 import knowledgeChatStreamController from './actions/knowledge/chat-stream/controller.tsx'
 import loginController from './actions/login/controller.tsx'
+import modelsController from './actions/models/controller.tsx'
 import registerController from './actions/register/controller.tsx'
 import { render } from './middleware/render.tsx'
 import { sessionCookie, sessionStorage } from './middleware/session.ts'
@@ -41,6 +42,7 @@ export const router = createRouter<AppContext>({
 
 router.map(routes, controller)
 router.map(routes.chat, chatController)
+router.map(routes.models, modelsController)
 router.map(routes.login, loginController)
 router.map(routes.register, registerController)
 router.map(routes.files, filesController)

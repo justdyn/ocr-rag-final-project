@@ -62,6 +62,7 @@ let {
   mainContentWideStyle,
   mainHeaderStyle,
   mainStyle,
+  modelListStyle,
   scrollFabStyle,
 } = await import('./styles/chat-shell/main-styles.ts')
 let { sidebarConversationsStyle, sidebarStyle } = await import(
@@ -415,5 +416,37 @@ describe('chat shell — viewport-bound layout contract', () => {
     assert.match(rule, /overflow-y:\s*auto/, `conversation list owns vertical scroll, got: ${rule}`)
     assert.match(rule, /min-height:\s*0/, `conversation list may shrink below content, got: ${rule}`)
     view.cleanup()
+  })
+
+  it('model picker open lifts header above dock and hides the composer dock', () => {
+    let mainView = render(<div mix={mainStyle} data-model-picker-open="true" />)
+    let main = mainView.$('div')
+    assert.ok(main, 'main element exists')
+    let mainText = joinedRuleText(main)
+    assert.match(
+      mainText,
+      /data-model-picker-open="true"[\s\S]*?>\s*header[\s\S]*?z-index:\s*5/,
+      `picker open raises header above dock (z 3), got: ${mainText}`,
+    )
+    assert.match(
+      mainText,
+      /data-model-picker-open="true"[\s\S]*?data-composer-dock[\s\S]*?visibility:\s*hidden/,
+      `picker open hides dock without unmounting, got: ${mainText}`,
+    )
+    assert.match(
+      mainText,
+      /data-model-picker-open="true"[\s\S]*?data-composer-dock[\s\S]*?pointer-events:\s*none/,
+      `picker open makes dock non-interactive, got: ${mainText}`,
+    )
+    mainView.cleanup()
+
+    let listView = render(<div mix={modelListStyle} />)
+    let listRule = ruleFor(listView.$('div'))
+    assert.match(
+      listRule,
+      /max-height:\s*min\(280px,\s*calc\(100dvh/,
+      `model list clamps to viewport under the header, got: ${listRule}`,
+    )
+    listView.cleanup()
   })
 })

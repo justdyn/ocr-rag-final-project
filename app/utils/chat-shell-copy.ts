@@ -2,6 +2,7 @@
 export const SHELL_COPY = {
   title: 'Remix',
   modelName: 'Remix',
+  modelSearchPlaceholder: 'Search models',
   heroHeading: 'What’s on the agenda today?',
   composerPlaceholder: 'Ask anything',
   ctaTitle: 'Get responses tailored to you',

@@ -25,6 +25,8 @@ export type ChatShellServerContext = {
   chatKnowledgeName: string | null
   conversations: ConversationSummary[]
   activeConversationId: string | null
+  /** Hydrated generalist model for the open thread (null on empty `/`). */
+  initialLlmModel: string | null
   initialMessages: PersistedMessage[]
   /** From GET /api/auth/me — sidebar account avatar + label. */
   userName: string
@@ -55,6 +57,7 @@ export async function loadChatShellServerContext(
   let chatKnowledgeName: string | null = null
   let knowledgeBases: ShellKnowledgeOption[] = []
   let activeConversationId: string | null = null
+  let initialLlmModel: string | null = null
   let initialMessages: PersistedMessage[] = []
   let conversationMissing = false
 
@@ -64,6 +67,7 @@ export async function loadChatShellServerContext(
       conversationMissing = true
     } else {
       activeConversationId = summary.id
+      initialLlmModel = summary.llm_model?.trim() || null
       let messages = await getConversationMessages(accessToken, summary.id)
       // Owned meta with a missing messages payload → empty thread (not 404).
       initialMessages = messages ?? []
@@ -127,6 +131,7 @@ export async function loadChatShellServerContext(
     chatKnowledgeName,
     conversations,
     activeConversationId: conversationMissing ? null : activeConversationId,
+    initialLlmModel: conversationMissing ? null : initialLlmModel,
     initialMessages: conversationMissing ? [] : initialMessages,
     userName,
     userEmail,

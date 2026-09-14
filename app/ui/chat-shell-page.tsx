@@ -23,6 +23,8 @@ export type ChatShellPageProps = {
   chatKnowledgeId?: string | null
   chatKnowledgeName?: string | null
   activeConversationId?: string | null
+  /** Hydrated generalist model for an open thread. */
+  initialLlmModel?: string | null
   conversations?: ConversationSummary[]
   initialMessages?: PersistedMessage[]
   /** Logged-in user from /api/auth/me — sidebar account row. */
@@ -43,6 +45,7 @@ export function ChatShellPage(handle: Handle<ChatShellPageProps>) {
       chatKnowledgeId = null,
       chatKnowledgeName = null,
       activeConversationId = null,
+      initialLlmModel = null,
       conversations = [],
       initialMessages = [],
       userName = '',
@@ -63,6 +66,7 @@ export function ChatShellPage(handle: Handle<ChatShellPageProps>) {
         activeKnowledgeId={chatKnowledgeId}
         activeKnowledgeName={chatKnowledgeName}
         initialConversationId={activeConversationId}
+        initialLlmModel={initialLlmModel}
         initialMessages={messagesFromPersisted(initialMessages)}
       />
     )

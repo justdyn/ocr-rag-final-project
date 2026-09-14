@@ -11,7 +11,7 @@ from app.core.database import get_db
 from app.dependencies.auth import CurrentUser
 from app.schemas.chat import (
     ConversationSummary,
-    ConversationTitleUpdate,
+    ConversationUpdate,
     LastConversationScope,
     MessageResponse,
 )
@@ -19,7 +19,7 @@ from app.services.conversations import (
     get_conversation_for_user,
     get_last_conversation_scope,
     list_messages_for_conversation,
-    rename_conversation,
+    update_conversation,
 )
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
@@ -71,19 +71,24 @@ async def get_conversation_messages(
 @router.patch("/{conversation_id}", response_model=ConversationSummary)
 async def patch_conversation(
     conversation_id: str,
-    body: ConversationTitleUpdate,
+    body: ConversationUpdate,
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> ConversationSummary:
-    """Rename an owned conversation (404 if missing/not owned)."""
-    title = body.title.strip()
-    if not title:
+    """Update title and/or llm_model on an owned conversation."""
+    title = body.title.strip() if body.title is not None else None
+    if body.title is not None and not title:
         raise HTTPException(status_code=400, detail="Title cannot be empty")
-    summary = await rename_conversation(
+    if title is None and body.llm_model is None:
+        raise HTTPException(
+            status_code=400, detail="Provide title and/or llm_model"
+        )
+    summary = await update_conversation(
         db,
         user_id=current_user.id,
         conversation_id=conversation_id,
         title=title,
+        llm_model=body.llm_model,
     )
     if summary is None:
         raise HTTPException(status_code=404, detail="Conversation not found")
