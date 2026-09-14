@@ -4,6 +4,7 @@ import { describe, it } from 'node:test'
 import {
   filterLibraryFiles,
   formatLibraryActivity,
+  libraryFileIsDocument,
   libraryFileIsImage,
   libraryFileKind,
 } from './library-files.ts'
@@ -18,6 +19,15 @@ describe('library-files helpers', () => {
     assert.equal(libraryFileIsImage({ filename: 'notes.pdf', meta: null }), false)
   })
 
+  it('treats non-images as documents', () => {
+    assert.equal(libraryFileIsDocument({ filename: 'notes.pdf', meta: null }), true)
+    assert.equal(libraryFileIsDocument({ filename: 'a.png', meta: null }), false)
+    assert.equal(
+      libraryFileIsDocument({ filename: 'x.bin', meta: { content_type: 'image/webp' } }),
+      false,
+    )
+  })
+
   it('filters by tab and filename query', () => {
     let files = [
       { id: '1', filename: 'Audit.pdf', meta: null },
@@ -27,6 +37,10 @@ describe('library-files helpers', () => {
     assert.deepEqual(
       filterLibraryFiles(files, { query: '', tab: 'images' }).map((f) => f.id),
       ['2'],
+    )
+    assert.deepEqual(
+      filterLibraryFiles(files, { query: '', tab: 'documents' }).map((f) => f.id),
+      ['1', '3'],
     )
     assert.deepEqual(
       filterLibraryFiles(files, { query: 'audit', tab: 'all' }).map((f) => f.id),

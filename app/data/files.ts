@@ -3,9 +3,22 @@
  * data/ owns server fetch — do not import this module from clientEntry code.
  */
 import { backendFetch } from './backend.ts'
-import type { FileRecord, FileStatusRecord } from '../utils/file-types.ts'
+import type {
+  FileListPage,
+  FileListParams,
+  FileRecord,
+  FileStatusRecord,
+  LibraryFileType,
+} from '../utils/file-types.ts'
 
-export type { FileRecord, FileStatusRecord, FileStatusValue } from '../utils/file-types.ts'
+export type {
+  FileListPage,
+  FileListParams,
+  FileRecord,
+  FileStatusRecord,
+  FileStatusValue,
+  LibraryFileType,
+} from '../utils/file-types.ts'
 export { isActiveStatus } from '../utils/file-types.ts'
 
 export class FilesApiError extends Error {
@@ -36,13 +49,37 @@ async function throwIfNotOk(response: Response): Promise<void> {
   throw new FilesApiError(message, response.status, message)
 }
 
-export async function listFiles(accessToken: string): Promise<FileRecord[]> {
-  let response = await backendFetch('/api/files', {
+const FILE_TYPES = new Set<LibraryFileType>(['all', 'images', 'documents'])
+
+export function buildFilesListQuery(params: FileListParams = {}): string {
+  let search = new URLSearchParams()
+  let page = Math.max(1, params.page ?? 1)
+  let limit = Math.min(100, Math.max(1, params.limit ?? 10))
+  search.set('page', String(page))
+  search.set('limit', String(limit))
+  if (params.q?.trim()) search.set('q', params.q.trim())
+  let type = params.type ?? 'all'
+  if (FILE_TYPES.has(type) && type !== 'all') search.set('type', type)
+  return `?${search.toString()}`
+}
+
+export async function listFiles(
+  accessToken: string,
+  params: FileListParams = {},
+): Promise<FileListPage> {
+  let response = await backendFetch(`/api/files${buildFilesListQuery(params)}`, {
     method: 'GET',
     accessToken,
   })
   await throwIfNotOk(response)
-  return (await response.json()) as FileRecord[]
+  let body = (await response.json()) as FileListPage
+  return {
+    items: Array.isArray(body.items) ? body.items : [],
+    page: typeof body.page === 'number' ? body.page : (params.page ?? 1),
+    limit: typeof body.limit === 'number' ? body.limit : (params.limit ?? 10),
+    total: typeof body.total === 'number' ? body.total : 0,
+    has_more: Boolean(body.has_more),
+  }
 }
 
 export async function uploadFile(

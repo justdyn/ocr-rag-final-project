@@ -68,8 +68,19 @@ before(() => {
       return Response.json(row, { status: 201 })
     }
 
-    if (url.endsWith('/api/files') && method === 'GET') {
-      return Response.json(fileStore)
+    if (url.includes('/api/files') && method === 'GET' && !/\/api\/files\/[^/]+/.test(url.split('?')[0]!)) {
+      let parsed = new URL(url, 'http://localhost')
+      let page = Math.max(1, Number(parsed.searchParams.get('page') ?? 1) || 1)
+      let limit = Math.min(100, Math.max(1, Number(parsed.searchParams.get('limit') ?? 10) || 10))
+      let start = (page - 1) * limit
+      let items = fileStore.slice(start, start + limit)
+      return Response.json({
+        items,
+        page,
+        limit,
+        total: fileStore.length,
+        has_more: start + limit < fileStore.length,
+      })
     }
 
     let statusMatch = url.match(/\/api\/files\/([^/]+)\/status$/)
@@ -160,9 +171,54 @@ describe('files BFF (library redirects + API)', () => {
       }),
     )
     assert.equal(response.status, 200)
-    let body = (await response.json()) as { files: Array<{ id: string }> }
-    assert.equal(body.files.length, 1)
-    assert.equal(body.files[0]!.id, 'file-a')
+    let body = (await response.json()) as {
+      items: Array<{ id: string }>
+      page: number
+      limit: number
+      total: number
+      has_more: boolean
+    }
+    assert.equal(body.items.length, 1)
+    assert.equal(body.items[0]!.id, 'file-a')
+    assert.equal(body.page, 1)
+    assert.equal(body.limit, 10)
+    assert.equal(body.total, 1)
+    assert.equal(body.has_more, false)
+  })
+
+  it('GET /files/list forwards page/limit/type/q query params', async () => {
+    fileStore = Array.from({ length: 25 }, (_, i) => ({
+      id: `file-${i}`,
+      filename: `f${i}.pdf`,
+      status: 'ready',
+      extraction_method: 'text_layer',
+      error: null,
+      meta: { content_type: 'application/pdf' },
+      created_at: i,
+      updated_at: i,
+      ocr_confidence: null,
+      hash: null,
+    }))
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let response = await router.fetch(
+      new Request(
+        'http://localhost/files/list?page=2&limit=20&type=documents&q=report',
+        { headers: { Cookie: cookie, Accept: 'application/json' } },
+      ),
+    )
+    assert.equal(response.status, 200)
+    let body = (await response.json()) as {
+      page: number
+      limit: number
+      total: number
+      items: Array<{ id: string }>
+      has_more: boolean
+    }
+    assert.equal(body.page, 2)
+    assert.equal(body.limit, 20)
+    assert.equal(body.total, 25)
+    assert.equal(body.items.length, 5)
+    assert.equal(body.has_more, false)
   })
 
   it('GET /files/list redirects anonymous users to login', async () => {

@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import UploadFile
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -62,6 +62,10 @@ KIND_BY_EXTENSION = {
     ".pptx": "ooxml",
     ".xlsx": "ooxml",
 }
+
+# Mirror frontend libraryFileIsImage filename suffixes (+ meta.content_type image/*).
+IMAGE_FILENAME_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp")
+FileListType = str  # "all" | "images" | "documents"
 
 
 class FileServiceError(Exception):
@@ -181,11 +185,73 @@ async def create_file_from_upload(
     return file_row
 
 
+def _image_predicate():
+    """SQL predicate matching frontend libraryFileIsImage heuristics.
+
+    Null/missing meta.content_type must be boolean-false for the image branch
+    so ``~predicate`` still classifies those rows as documents.
+    """
+    suffix_clauses = [File.filename.ilike(f"%{suffix}") for suffix in IMAGE_FILENAME_SUFFIXES]
+    content_type = File.meta["content_type"].as_string()
+    return or_(
+        *suffix_clauses,
+        and_(content_type.is_not(None), content_type.like("image/%")),
+    )
+
+
+def _escape_like(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 async def list_files_for_user(db: AsyncSession, *, user_id: str) -> list[File]:
+    """Full owner list (legacy). Prefer list_files_for_user_paginated for Library."""
     result = await db.scalars(
-        select(File).where(File.user_id == user_id).order_by(File.created_at.desc())
+        select(File).where(File.user_id == user_id).order_by(File.updated_at.desc())
     )
     return list(result.all())
+
+
+async def list_files_for_user_paginated(
+    db: AsyncSession,
+    *,
+    user_id: str,
+    q: str | None = None,
+    file_type: FileListType = "all",
+    page: int = 1,
+    limit: int = 10,
+) -> tuple[list[File], int]:
+    """Owner-scoped file page ordered by updated_at DESC.
+
+    Returns (rows, total_matching). file_type: all | images | documents.
+    """
+    if page < 1:
+        page = 1
+    if limit < 1:
+        limit = 10
+
+    filters = [File.user_id == user_id]
+    if q and (needle := q.strip()):
+        filters.append(
+            File.filename.ilike(f"%{_escape_like(needle)}%", escape="\\")
+        )
+
+    if file_type == "images":
+        filters.append(_image_predicate())
+    elif file_type == "documents":
+        filters.append(~_image_predicate())
+
+    where = and_(*filters)
+    total = await db.scalar(select(func.count()).select_from(File).where(where))
+    total_n = int(total or 0)
+
+    result = await db.scalars(
+        select(File)
+        .where(where)
+        .order_by(File.updated_at.desc())
+        .offset((page - 1) * limit)
+        .limit(limit)
+    )
+    return list(result.all()), total_n
 
 
 async def get_file_for_user(

@@ -1,7 +1,9 @@
 /**
- * Library list helpers — filename filter, image tab, relative activity labels.
+ * Library list helpers — filename filter, image/documents tabs, relative activity.
  */
-import type { FileMeta } from './file-types.ts'
+import type { FileMeta, LibraryFileType } from './file-types.ts'
+
+export type { LibraryFileType }
 
 export function fileContentType(meta: FileMeta | null | undefined): string | null {
   if (!meta) return null
@@ -25,13 +27,22 @@ export function libraryFileIsImage(file: {
   )
 }
 
+/** Non-image owner files (PDF, text, office, etc.). */
+export function libraryFileIsDocument(file: {
+  filename: string
+  meta?: FileMeta | null
+}): boolean {
+  return !libraryFileIsImage(file)
+}
+
 export function filterLibraryFiles<T extends { filename: string; meta?: FileMeta | null }>(
   files: T[],
-  opts: { query: string; tab: 'all' | 'images' },
+  opts: { query: string; tab: LibraryFileType },
 ): T[] {
   let q = opts.query.trim().toLowerCase()
   return files.filter((file) => {
     if (opts.tab === 'images' && !libraryFileIsImage(file)) return false
+    if (opts.tab === 'documents' && !libraryFileIsDocument(file)) return false
     if (q && !file.filename.toLowerCase().includes(q)) return false
     return true
   })

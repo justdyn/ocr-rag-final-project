@@ -5,7 +5,7 @@
  */
 import { routes } from '../routes.ts'
 import { formatUploadError } from './file-errors.ts'
-import type { FileRecord, FileStatusRecord } from './file-types.ts'
+import type { FileListPage, FileRecord, FileStatusRecord } from './file-types.ts'
 
 export const FILE_STATUS_POLL_MS = 2000
 
@@ -81,15 +81,32 @@ function uploadWithProgress(
   }
 }
 
-export async function fetchLibraryFiles(): Promise<FileRecord[] | null> {
+export async function fetchLibraryFiles(params: {
+  q?: string
+  type?: 'all' | 'images' | 'documents'
+  page?: number
+  limit?: number
+} = {}): Promise<FileListPage | null> {
   try {
-    let response = await fetch(routes.files.list.href(), {
+    let search = new URLSearchParams()
+    search.set('page', String(Math.max(1, params.page ?? 1)))
+    search.set('limit', String(Math.min(100, Math.max(1, params.limit ?? 10))))
+    if (params.q?.trim()) search.set('q', params.q.trim())
+    if (params.type && params.type !== 'all') search.set('type', params.type)
+    let response = await fetch(`${routes.files.list.href()}?${search.toString()}`, {
       headers: { Accept: 'application/json' },
       credentials: 'same-origin',
     })
     if (!response.ok) return null
-    let body = (await response.json()) as { files?: FileRecord[] }
-    return Array.isArray(body.files) ? body.files : null
+    let body = (await response.json()) as FileListPage
+    if (!Array.isArray(body.items)) return null
+    return {
+      items: body.items,
+      page: typeof body.page === 'number' ? body.page : (params.page ?? 1),
+      limit: typeof body.limit === 'number' ? body.limit : (params.limit ?? 10),
+      total: typeof body.total === 'number' ? body.total : 0,
+      has_more: Boolean(body.has_more),
+    }
   } catch {
     return null
   }

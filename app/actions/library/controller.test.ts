@@ -46,11 +46,11 @@ before(() => {
       return Response.json([])
     }
 
-    if (url.endsWith('/api/files') && method === 'GET') {
+    if (url.includes('/api/files') && method === 'GET' && !/\/api\/files\/[^/]+/.test(url.split('?')[0]!)) {
       if (!auth.includes(MOCK_TOKEN)) {
         return Response.json({ detail: 'Unauthorized' }, { status: 401 })
       }
-      return Response.json([
+      let items = [
         {
           id: 'file-1',
           filename: 'report.pdf',
@@ -62,7 +62,14 @@ before(() => {
           created_at: 10,
           updated_at: 20,
         },
-      ])
+      ]
+      return Response.json({
+        items,
+        page: 1,
+        limit: 10,
+        total: items.length,
+        has_more: false,
+      })
     }
 
     return new Response(`unexpected ${method} ${url}`, { status: 500 })

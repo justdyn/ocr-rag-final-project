@@ -20,6 +20,24 @@ export type FileRecord = {
   updated_at: number
 }
 
+/** Paginated owner file list from GET /api/files (and BFF /files/list). */
+export type FileListPage = {
+  items: FileRecord[]
+  page: number
+  limit: number
+  total: number
+  has_more: boolean
+}
+
+export type LibraryFileType = 'all' | 'images' | 'documents'
+
+export type FileListParams = {
+  q?: string
+  type?: LibraryFileType
+  page?: number
+  limit?: number
+}
+
 export type FileStatusRecord = {
   id: string
   status: FileStatusValue

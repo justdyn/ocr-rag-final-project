@@ -1,5 +1,7 @@
 import { css } from 'remix/ui'
 
+import { SIDEBAR_MOBILE_MAX_PX } from '../../../utils/chat-shell-sidebar.ts'
+
 /** Grayscale Library panel styles (§3.5 shell language). */
 
 export const libraryRootStyle = css({
@@ -106,7 +108,10 @@ export const libraryTableStyle = css({
   display: 'flex',
   flexDirection: 'column',
   width: '100%',
-  borderTop: '1px solid var(--home-border)',
+  border: '1px solid var(--home-border)',
+  borderRadius: '10px',
+  overflow: 'hidden',
+  background: '#fff',
 })
 
 export const libraryHeaderRowStyle = css({
@@ -114,10 +119,11 @@ export const libraryHeaderRowStyle = css({
   gridTemplateColumns: 'minmax(0, 1fr) 160px 40px',
   gap: '12px',
   alignItems: 'center',
-  padding: '10px 8px',
+  padding: '10px 12px',
   fontSize: '13px',
   fontWeight: 500,
   color: 'var(--home-muted)',
+  background: 'var(--home-surface)',
   borderBottom: '1px solid var(--home-border)',
 })
 
@@ -127,13 +133,118 @@ export const libraryRowStyle = css({
   gridTemplateColumns: 'minmax(0, 1fr) 160px 40px',
   gap: '12px',
   alignItems: 'center',
-  padding: '12px 8px',
+  padding: '12px 12px',
   borderBottom: '1px solid var(--home-border)',
-  borderRadius: '8px',
+  borderRadius: 0,
   transition: 'background-color 120ms var(--home-ease-out)',
+  '&:last-child': { borderBottom: 0 },
   '&:hover, &:focus-within': {
     background: 'var(--home-surface)',
   },
+})
+
+export const libraryFooterStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: '12px',
+  padding: '10px 12px',
+  borderTop: '1px solid var(--home-border)',
+  background: '#fff',
+  fontSize: '13px',
+  color: 'var(--home-muted)',
+})
+
+export const libraryFooterMetaStyle = css({
+  margin: 0,
+  whiteSpace: 'nowrap',
+})
+
+export const libraryFooterControlsStyle = css({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: '12px',
+  marginLeft: 'auto',
+})
+
+export const libraryRowsPerPageStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '8px',
+  color: 'var(--home-muted)',
+  fontSize: '13px',
+})
+
+export const librarySelectStyle = css({
+  appearance: 'none',
+  margin: 0,
+  height: '32px',
+  padding: '0 28px 0 10px',
+  borderRadius: '6px',
+  border: '1px solid var(--home-border-strong)',
+  background:
+    'var(--home-surface) url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23666\' stroke-width=\'2\'%3E%3Cpath d=\'m6 9 6 6 6-6\'/%3E%3C/svg%3E") no-repeat right 8px center',
+  color: 'var(--home-fg)',
+  font: 'inherit',
+  fontSize: '13px',
+  cursor: 'pointer',
+  outline: 'none',
+  '&:focus-visible': { borderColor: 'var(--home-fg)' },
+})
+
+export const libraryPaginationStyle = css({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '4px',
+  [`@media (max-width: ${SIDEBAR_MOBILE_MAX_PX}px)`]: {
+    // Icon-only Prev/Next on mobile: the word hides, the chevron + aria-label stay.
+    '& [data-library-page-label]': { display: 'none' },
+  },
+})
+
+export const libraryPageButtonStyle = css({
+  appearance: 'none',
+  border: '1px solid transparent',
+  margin: 0,
+  minWidth: '32px',
+  height: '32px',
+  padding: '0 8px',
+  borderRadius: '6px',
+  background: 'transparent',
+  color: 'var(--home-fg)',
+  font: 'inherit',
+  fontSize: '13px',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '4px',
+  whiteSpace: 'nowrap',
+  flexShrink: 0,
+  transition: 'background-color 120ms var(--home-ease-out), border-color 120ms var(--home-ease-out)',
+  '&:hover:not(:disabled), &:focus-visible:not(:disabled)': {
+    background: 'var(--home-surface)',
+    outline: 'none',
+  },
+  '&:disabled': {
+    opacity: 0.4,
+    cursor: 'not-allowed',
+    color: 'var(--home-subtle)',
+  },
+})
+
+export const libraryPageButtonActiveStyle = css({
+  borderColor: 'var(--home-border-strong)',
+  background: 'var(--home-surface)',
+})
+
+export const libraryPageEllipsisStyle = css({
+  minWidth: '24px',
+  textAlign: 'center',
+  color: 'var(--home-subtle)',
+  userSelect: 'none',
 })
 
 export const libraryNameCellStyle = css({

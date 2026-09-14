@@ -13,6 +13,7 @@ import {
   listFiles,
   uploadFile,
   type FileRecord,
+  type LibraryFileType,
 } from '../../data/files.ts'
 import { requireAuthFromSession } from '../../middleware/require-auth.ts'
 import { routes } from '../../routes.ts'
@@ -29,19 +30,43 @@ function asUploadFile(value: FormDataEntryValue | null): File | null {
   })
 }
 
+function parseListParams(request: Request): {
+  q?: string
+  type: LibraryFileType
+  page: number
+  limit: number
+} {
+  let url = new URL(request.url)
+  let q = url.searchParams.get('q') ?? undefined
+  let typeRaw = url.searchParams.get('type') ?? 'all'
+  let type: LibraryFileType =
+    typeRaw === 'images' || typeRaw === 'documents' ? typeRaw : 'all'
+  let pageRaw = url.searchParams.get('page')
+  let limitRaw = url.searchParams.get('limit')
+  let page =
+    pageRaw != null && pageRaw !== '' && Number.isFinite(Number(pageRaw))
+      ? Math.max(1, Math.trunc(Number(pageRaw)))
+      : 1
+  let limit =
+    limitRaw != null && limitRaw !== '' && Number.isFinite(Number(limitRaw))
+      ? Math.min(100, Math.max(1, Math.trunc(Number(limitRaw))))
+      : 10
+  return { q, type, page, limit }
+}
+
 export default createController(routes.files, {
   actions: {
     async index() {
       return redirect(routes.library.index.href(), 303)
     },
 
-    async list({ session }) {
+    async list({ session, request }) {
       let auth = requireAuthFromSession(session, routes.library.index.href())
       if (auth instanceof Response) return auth
 
       try {
-        let files = await listFiles(auth)
-        return Response.json({ files })
+        let page = await listFiles(auth, parseListParams(request))
+        return Response.json(page)
       } catch (error) {
         if (error instanceof FilesApiError && error.status < 500) {
           return Response.json({ error: error.message }, { status: error.status })

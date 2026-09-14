@@ -21,6 +21,14 @@ class FileResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class FileListResponse(BaseModel):
+    items: list[FileResponse]
+    page: int
+    limit: int
+    total: int
+    has_more: bool
+
+
 class FileStatusResponse(BaseModel):
     id: str
     status: str

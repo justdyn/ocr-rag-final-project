@@ -5,21 +5,21 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import FileResponse as BlobFileResponse
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import CurrentUser
-from app.schemas.files import FileResponse, FileStatusResponse
+from app.schemas.files import FileListResponse, FileResponse, FileStatusResponse
 from app.services.files import (
     MIME_BY_EXTENSION,
     FileServiceError,
     create_file_from_upload,
     delete_file_for_user,
     get_file_for_user,
-    list_files_for_user,
+    list_files_for_user_paginated,
     mark_pending_for_reprocess,
 )
 from app.services.ingestion import process_file_by_id
@@ -66,13 +66,30 @@ async def upload_file(
     return _to_response(file_row)
 
 
-@router.get("", response_model=list[FileResponse])
+@router.get("", response_model=FileListResponse)
 async def list_files(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> list[FileResponse]:
-    rows = await list_files_for_user(db, user_id=current_user.id)
-    return [_to_response(row) for row in rows]
+    q: Annotated[str | None, Query(max_length=200)] = None,
+    type: Annotated[str, Query(pattern="^(all|images|documents)$")] = "all",
+    page: Annotated[int, Query(ge=1)] = 1,
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+) -> FileListResponse:
+    rows, total = await list_files_for_user_paginated(
+        db,
+        user_id=current_user.id,
+        q=q,
+        file_type=type,
+        page=page,
+        limit=limit,
+    )
+    return FileListResponse(
+        items=[_to_response(row) for row in rows],
+        page=page,
+        limit=limit,
+        total=total,
+        has_more=(page * limit) < total,
+    )
 
 
 @router.get("/{file_id}", response_model=FileResponse)
