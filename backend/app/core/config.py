@@ -52,6 +52,9 @@ class Settings(BaseModel):
     chunk_size: int = Field(default=1000)
     chunk_overlap: int = Field(default=100)
 
+    # SPJ rules-only field extraction: doc confidence below this flags `below_threshold`
+    spj_extract_min_confidence: float = Field(default=0.5)
+
     # Hybrid retrieval defaults (consumed by later steps)
     rrf_constant: int = Field(default=60)
     bm25_weight: float = Field(default=0.5)
@@ -114,6 +117,7 @@ def get_settings() -> Settings:
         embedding_model=os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2"),
         chunk_size=int(os.getenv("CHUNK_SIZE", "1000")),
         chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "100")),
+        spj_extract_min_confidence=float(os.getenv("SPJ_EXTRACT_MIN_CONFIDENCE", "0.5")),
         rrf_constant=int(os.getenv("RRF_CONSTANT", "60")),
         bm25_weight=float(os.getenv("BM25_WEIGHT", "0.5")),
         vector_weight=float(os.getenv("VECTOR_WEIGHT", "0.5")),

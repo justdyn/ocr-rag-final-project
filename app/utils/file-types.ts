@@ -45,6 +45,13 @@ export type FileStatusRecord = {
   error: string | null
 }
 
+export type FileFieldsRecord = {
+  id: string
+  status: string
+  fields: Record<string, unknown> | null
+  document_total_computed: number | null
+}
+
 export function isActiveStatus(status: FileStatusValue): boolean {
   return status === 'pending' || status === 'processing'
 }

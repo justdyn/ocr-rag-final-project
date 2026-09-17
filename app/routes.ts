@@ -25,9 +25,20 @@ export const routes = route({
     list: get('list'),
     upload: post('upload'),
     status: get(':fileId/status'),
+    // SPJ fields JSON (Phase A3 proxy; ownership + 404 enforced upstream).
+    fields: get(':fileId/fields'),
     // Raw blob proxy for attachment thumbnails/modals (ownership enforced upstream).
     content: get(':fileId/content'),
     destroy: del(':fileId'),
+  }),
+  // SPJ draft BFF (Phase B4+B5): create/show/confirm JSON proxy + gated export
+  // passthrough + review UI; ownership/409 stay upstream. No PATCH.
+  spj: route('spj', {
+    create: post('knowledge/:knowledgeId/draft'),
+    show: get('drafts/:draftId'),
+    confirm: post('drafts/:draftId/confirm'),
+    exportDraft: get('drafts/:draftId/export'),
+    review: get('drafts/:draftId/review'),
   }),
   // Create/addFile/chat BFF for implicit per-chat KB; GET index/show redirect (no management UI).
   knowledge: route('knowledge', {

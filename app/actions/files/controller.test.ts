@@ -83,6 +83,29 @@ before(() => {
       })
     }
 
+    let fieldsMatch = url.match(/\/api\/files\/([^/]+)\/fields$/)
+    if (fieldsMatch && method === 'GET') {
+      let row = fileStore.find((f) => f.id === fieldsMatch[1])
+      if (!row) return Response.json({ detail: 'File not found' }, { status: 404 })
+      if (row.id === 'legacy-1') {
+        return Response.json({
+          id: row.id,
+          status: row.status,
+          fields: null,
+          document_total_computed: null,
+        })
+      }
+      return Response.json({
+        id: row.id,
+        status: row.status,
+        fields: {
+          lines: [{ line_total: 10000 }, { line_total: 5000 }],
+          document_total: 999,
+        },
+        document_total_computed: 15000,
+      })
+    }
+
     let statusMatch = url.match(/\/api\/files\/([^/]+)\/status$/)
     if (statusMatch && method === 'GET') {
       let row = fileStore.find((f) => f.id === statusMatch[1])
@@ -449,6 +472,86 @@ describe('files BFF (library redirects + API)', () => {
   it('GET /files/:id/content redirects anonymous users to login (303)', async () => {
     let response = await router.fetch(
       new Request('http://localhost' + routes.files.content.href({ fileId: 'blob-1' })),
+    )
+    assert.equal(response.status, 303)
+    let location = response.headers.get('Location') ?? ''
+    assert.ok(location.startsWith('/login'), `redirects to login, got: ${location}`)
+  })
+
+  it('GET /files/:id/fields forwards the SPJ fields JSON as-is', async () => {
+    fileStore = [
+      {
+        id: 'spj-1',
+        filename: 'spj.pdf',
+        status: 'ready',
+        extraction_method: 'ocr:tesseract',
+        error: null,
+        meta: null,
+        created_at: 1,
+        updated_at: 1,
+        ocr_confidence: null,
+        hash: null,
+      },
+    ]
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let response = await router.fetch(
+      new Request('http://localhost' + routes.files.fields.href({ fileId: 'spj-1' }), {
+        headers: { Cookie: cookie, Accept: 'application/json' },
+      }),
+    )
+    assert.equal(response.status, 200)
+    let json = (await response.json()) as {
+      id: string
+      status: string
+      fields: { lines: Array<{ line_total: number }>; document_total: number } | null
+      document_total_computed: number | null
+    }
+    assert.equal(json.id, 'spj-1')
+    assert.equal(json.status, 'ready')
+    assert.deepEqual(json.fields?.lines, [{ line_total: 10000 }, { line_total: 5000 }])
+    assert.equal(json.document_total_computed, 15000)
+  })
+
+  it('GET /files/:id/fields returns null fields for legacy rows', async () => {
+    fileStore = [
+      {
+        id: 'legacy-1',
+        filename: 'old.pdf',
+        status: 'ready',
+        extraction_method: 'text_layer',
+        error: null,
+        meta: null,
+        created_at: 1,
+        updated_at: 1,
+        ocr_confidence: null,
+        hash: null,
+      },
+    ]
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let response = await router.fetch(
+      new Request('http://localhost' + routes.files.fields.href({ fileId: 'legacy-1' }), {
+        headers: { Cookie: cookie, Accept: 'application/json' },
+      }),
+    )
+    assert.equal(response.status, 200)
+    let json = (await response.json()) as { fields: unknown; document_total_computed: unknown }
+    assert.equal(json.fields, null)
+    assert.equal(json.document_total_computed, null)
+  })
+
+  it('GET /files/:id/fields passes through FastAPI 404 for unknown files', async () => {
+    let cookie = await sessionCookieHeader(MOCK_TOKEN)
+    let response = await router.fetch(
+      new Request('http://localhost' + routes.files.fields.href({ fileId: 'ghost-1' }), {
+        headers: { Cookie: cookie },
+      }),
+    )
+    assert.equal(response.status, 404)
+  })
+
+  it('GET /files/:id/fields redirects anonymous users to login (303)', async () => {
+    let response = await router.fetch(
+      new Request('http://localhost' + routes.files.fields.href({ fileId: 'spj-1' })),
     )
     assert.equal(response.status, 303)
     let location = response.headers.get('Location') ?? ''

@@ -87,6 +87,26 @@ export const composerActionsStyle = css({
   gap: '6px',
 })
 
+export const composerActionPillStyle = css({
+  appearance: 'none',
+  border: 0,
+  margin: 0,
+  minHeight: '36px',
+  padding: '8px 12px',
+  borderRadius: '9999px',
+  background: 'var(--home-surface)',
+  color: 'var(--home-fg)',
+  font: 'inherit',
+  fontSize: '13px',
+  fontWeight: 500,
+  lineHeight: '20px',
+  cursor: 'pointer',
+  transition: 'background-color 150ms var(--home-ease-out), transform 120ms var(--home-ease-out), opacity 120ms var(--home-ease-out)',
+  '&:hover:not(:disabled), &:focus-visible:not(:disabled)': { background: 'var(--home-border)', outline: 'none' },
+  '&:active:not(:disabled)': { transform: 'scale(0.98)' },
+  '&:disabled': { opacity: 0.45, cursor: 'not-allowed' },
+})
+
 export const sendButtonStyle = css({
   appearance: 'none',
   border: 0,

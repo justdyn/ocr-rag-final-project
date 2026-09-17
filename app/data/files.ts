@@ -4,6 +4,7 @@
  */
 import { backendFetch } from './backend.ts'
 import type {
+  FileFieldsRecord,
   FileListPage,
   FileListParams,
   FileRecord,
@@ -12,6 +13,7 @@ import type {
 } from '../utils/file-types.ts'
 
 export type {
+  FileFieldsRecord,
   FileListPage,
   FileListParams,
   FileRecord,
@@ -43,7 +45,7 @@ async function readDetail(response: Response): Promise<string> {
   }
 }
 
-async function throwIfNotOk(response: Response): Promise<void> {
+export async function throwIfNotOk(response: Response): Promise<void> {
   if (response.ok) return
   let message = await readDetail(response)
   throw new FilesApiError(message, response.status, message)
@@ -108,6 +110,18 @@ export async function getFileStatus(
   })
   await throwIfNotOk(response)
   return (await response.json()) as FileStatusRecord
+}
+
+export async function getFileFields(
+  accessToken: string,
+  fileId: string,
+): Promise<FileFieldsRecord> {
+  let response = await backendFetch(`/api/files/${fileId}/fields`, {
+    method: 'GET',
+    accessToken,
+  })
+  await throwIfNotOk(response)
+  return (await response.json()) as FileFieldsRecord
 }
 
 export async function deleteFile(

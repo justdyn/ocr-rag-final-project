@@ -8,7 +8,7 @@
     "dev:server": "node --watch --import remix/node-tsx server.ts",
     "dev": "npm run build:css && concurrently -k \"npm run dev:css\" \"npm run dev:server\"",
     "start": "npm run build:css && node --import remix/node-tsx server.ts",
-    "test": "node --import remix/node-tsx --test",
+    "test": "node --import remix/node-tsx --test \"**/*.test.ts\" \"**/*.test.tsx\"",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

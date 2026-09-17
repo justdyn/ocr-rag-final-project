@@ -21,6 +21,7 @@ from app.services.chroma_store import delete_file_collection, upsert_chunks
 from app.services.embeddings import embed_texts
 from app.services.extraction import ExtractionError, extract_file
 from app.services.knowledge import invalidate_caches_for_file
+from app.services.spj_fields import extract_fields as extract_spj_fields
 
 
 async def process_file_by_id(file_id: str) -> None:
@@ -55,6 +56,14 @@ async def run_ingestion(db: AsyncSession, file_id: str) -> None:
 
         extension = Path(file_row.filename).suffix.lower()
         extracted = extract_file(path, extension=extension)
+
+        # Pure sync compute — no DB read held across embed/Chroma below.
+        fields = extract_spj_fields(
+            extracted.text,
+            extraction_method=extracted.extraction_method,
+            file_id=file_id,
+            min_confidence=settings.spj_extract_min_confidence,
+        )
 
         chunks = split_text(
             extracted.text,
@@ -139,7 +148,7 @@ async def run_ingestion(db: AsyncSession, file_id: str) -> None:
             ready_row.status = "ready"
             ready_row.extraction_method = extracted.extraction_method
             ready_row.ocr_confidence = extracted.ocr_confidence
-            ready_row.data = {"text": extracted.text}
+            ready_row.data = {"text": extracted.text, "fields": fields}
             ready_row.meta = meta
             ready_row.updated_at = now
             await db.commit()

@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import CurrentUser
-from app.schemas.files import FileListResponse, FileResponse, FileStatusResponse
+from app.schemas.files import (
+    FileFieldsResponse,
+    FileListResponse,
+    FileResponse,
+    FileStatusResponse,
+)
 from app.services.files import (
     MIME_BY_EXTENSION,
     FileServiceError,
@@ -23,6 +28,7 @@ from app.services.files import (
     mark_pending_for_reprocess,
 )
 from app.services.ingestion import process_file_by_id
+from app.services.spj_fields import compute_document_total
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
@@ -114,6 +120,31 @@ async def get_file_status(
     if file_row is None:
         raise HTTPException(status_code=404, detail="File not found")
     return _status_response(file_row)
+
+
+@router.get("/{file_id}/fields", response_model=FileFieldsResponse)
+async def get_file_fields(
+    file_id: str,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> FileFieldsResponse:
+    """Stored SPJ fields for a ready file; total always recomputed, never trusted stale."""
+    file_row = await get_file_for_user(db, user_id=current_user.id, file_id=file_id)
+    if file_row is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    data = file_row.data if isinstance(file_row.data, dict) else {}
+    fields = data.get("fields")
+    total = (
+        compute_document_total(fields)
+        if isinstance(fields, dict) and "lines" in fields
+        else None
+    )
+    return FileFieldsResponse(
+        id=file_row.id,
+        status=file_row.status,
+        fields=fields,
+        document_total_computed=total,
+    )
 
 
 @router.get("/{file_id}/content")

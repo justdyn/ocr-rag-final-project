@@ -29,6 +29,13 @@ class FileListResponse(BaseModel):
     has_more: bool
 
 
+class FileFieldsResponse(BaseModel):
+    id: str
+    status: str
+    fields: dict[str, Any] | None = None
+    document_total_computed: int | None = None
+
+
 class FileStatusResponse(BaseModel):
     id: str
     status: str

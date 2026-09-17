@@ -13,6 +13,7 @@ import knowledgeChatStreamController from './actions/knowledge/chat-stream/contr
 import loginController from './actions/login/controller.tsx'
 import modelsController from './actions/models/controller.tsx'
 import registerController from './actions/register/controller.tsx'
+import spjController from './actions/spj/controller.tsx'
 import { render } from './middleware/render.tsx'
 import { sessionCookie, sessionStorage } from './middleware/session.ts'
 import { routes } from './routes.ts'
@@ -49,3 +50,4 @@ router.map(routes.files, filesController)
 router.map(routes.library, libraryController)
 router.map(routes.knowledge, knowledgeController)
 router.map(routes.knowledge.chatStream, knowledgeChatStreamController)
+router.map(routes.spj, spjController)

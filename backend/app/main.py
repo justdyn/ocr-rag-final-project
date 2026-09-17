@@ -15,6 +15,7 @@ from app.routers import (
     memory,
     models,
     query,
+    spj,
 )
 
 
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
     application.include_router(query.router)
     application.include_router(chat.router)
     application.include_router(models.router)
+    application.include_router(spj.router)
     return application
 
 

@@ -1,29 +1,27 @@
-# Frontend
+# DocIntel (OCR-RAG)
 
-A minimal Remix application starter with a home page.
+Remix 3 BFF + FastAPI app: ingest PDFs/images (Tesseract when needed), hybrid BM25 + MiniLM fused with weighted RRF, cited SSE chat, owner Library.
 
-## Starter Shape
+**Product requirements:** `.docs/prd.md` (as-built vs v1 SPJ). Inventory: `.docs/as-built-for-prd.md`. Frontend rules: `.docs/styleguide.md`.
 
-- `app/actions/controller.tsx` owns the top-level route actions.
-- `app/routes.ts` defines the route contract.
-- `app/router.ts` wires routes to handlers.
-- `app/middleware/render.tsx` installs the request-scoped renderer used by actions.
-- `app/ui/` holds the shared document shell and home page UI.
-- `app/assets.ts` owns the server-side asset pipeline used by the asset route and renderer.
-- `public/` contains static files served from the app root.
+This is not a generic Remix starter. Backend lives in `backend/`. There is no Ollama path and no required Docker Compose in v1.
 
-## Growing The App
+## Layout
 
-- Put top-level route actions in `app/actions/controller.tsx`.
-- Add `app/actions/<route-key>/controller.tsx` when a nested route map needs its own actions or middleware.
-- Add directories like `app/data/` or `test/` when the app actually needs them.
-- Move shared UI into `app/ui/` once more than one route needs it.
+- `app/actions/<route>/controller.tsx` — routes
+- `app/ui/` — shared UI (`chat-shell-*`, library)
+- `app/routes.ts` — URL contract
+- `backend/app/` — FastAPI
 
 ## Commands
 
 ```sh
+# Frontend (repo root; Node from .nvmrc via fnm)
 npm i
-npm run start
+npm run dev
 npm test
 npm run typecheck
+
+# Backend (backend/; Python 3.12.9, project venv)
+# uvicorn app.main:app — see backend/.env.example for LLM_API_KEY and JWT_*
 ```

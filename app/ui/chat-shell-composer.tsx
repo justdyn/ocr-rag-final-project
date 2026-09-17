@@ -2,7 +2,7 @@
  * Chat composer: draft, multi-file attach, implicit KB bind (extracted to stay under 500 lines, §2.2).
  * Regular component (not clientEntry) — lives inside ChatShellMainPanel's hydrated tree.
  */
-import { on, ref, type Handle } from 'remix/ui'
+import { navigate, on, ref, type Handle } from 'remix/ui'
 
 import { routes } from '../routes.ts'
 import { COMPOSER_UPLOAD_CONCURRENCY, mapPool } from '../utils/async-pool.ts'
@@ -43,6 +43,7 @@ import { LucideIcon } from './chat-shell/lucide-icon.tsx'
 import { ComposerAttachmentPreview } from './chat-shell/composer-attachment-preview.tsx'
 import { ComposerAttachmentStrip } from './chat-shell/composer-attachment-strip.tsx'
 import {
+  composerActionPillStyle,
   composerActionsStyle,
   composerFeedbackStyle,
   composerFormStyle,
@@ -78,6 +79,8 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
   let sessionKnowledgeId: string | null = handle.props.knowledgeId
   let sessionKnowledgeName: string | null = handle.props.knowledgeName
   let uploadNotice: { tone: 'error'; text: string } | null = null
+  let spjDraftNotice: { tone: 'error'; text: string } | null = null
+  let spjDraftLoading = false
   let bindInFlight = false
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let lastReset = handle.props.resetGeneration
@@ -254,6 +257,43 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
     handle.update()
   }
 
+  async function handleSpjDraft() {
+    if (!handle.props.authenticated) {
+      window.location.href = routes.login.index.href()
+      return
+    }
+    let knowledgeId = sessionKnowledgeId ?? handle.props.knowledgeId
+    if (!knowledgeId) return
+    if (spjDraftLoading) return
+
+    spjDraftLoading = true
+    spjDraftNotice = null
+    handle.update()
+
+    try {
+      let res = await fetch(routes.spj.create.href({ knowledgeId }), {
+        method: 'POST',
+        credentials: 'same-origin',
+      })
+      if (!res.ok) {
+        let errorJson = await res.json().catch(() => ({}))
+        spjDraftNotice = {
+          tone: 'error',
+          text: (errorJson as { error?: string }).error ?? 'Could not create SPJ draft.',
+        }
+        spjDraftLoading = false
+        handle.update()
+        return
+      }
+      let data = (await res.json()) as { id: string }
+      navigate(routes.spj.review.href({ draftId: data.id }))
+    } catch {
+      spjDraftNotice = { tone: 'error', text: 'Could not create SPJ draft.' }
+      spjDraftLoading = false
+      handle.update()
+    }
+  }
+
   async function uploadQueued(file: File, localId: string) {
     let report = createProgressThrottle((fraction) => {
       progressById.set(localId, fraction)
@@ -331,6 +371,8 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
     sessionKnowledgeId = handle.props.knowledgeId
     sessionKnowledgeName = handle.props.knowledgeName
     uploadNotice = null
+    spjDraftNotice = null
+    spjDraftLoading = false
     bindInFlight = false
   }
 
@@ -455,6 +497,20 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
               />
             </label>
             <div mix={composerActionsStyle}>
+              {handle.props.authenticated && (sessionKnowledgeId ?? handle.props.knowledgeId) ? (
+                <button
+                  type="button"
+                  disabled={spjDraftLoading}
+                  mix={[
+                    composerActionPillStyle,
+                    on('click', () => {
+                      void handleSpjDraft()
+                    }),
+                  ]}
+                >
+                  {spjDraftLoading ? 'Creating…' : SHELL_COPY.spjDraftAction}
+                </button>
+              ) : null}
               <button
                 type="submit"
                 aria-label="Send message"
@@ -474,6 +530,11 @@ export function ChatShellComposer(handle: Handle<ChatShellComposerProps>) {
         {uploadNotice ? (
           <p mix={composerFeedbackStyle} role="alert">
             {uploadNotice.text}
+          </p>
+        ) : null}
+        {spjDraftNotice ? (
+          <p mix={composerFeedbackStyle} role="alert">
+            {spjDraftNotice.text}
           </p>
         ) : null}
         <ComposerAttachmentPreview preview={previewView} onClose={closePreview} />

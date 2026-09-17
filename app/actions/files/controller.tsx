@@ -9,6 +9,7 @@ import {
   deleteFile,
   FilesApiError,
   getFileContent,
+  getFileFields,
   getFileStatus,
   listFiles,
   uploadFile,
@@ -118,6 +119,22 @@ export default createController(routes.files, {
           return Response.json({ error: error.message }, { status: error.status })
         }
         let message = error instanceof Error ? error.message : 'Status check failed.'
+        return Response.json({ error: message }, { status: 502 })
+      }
+    },
+
+    async fields({ session, params }) {
+      let auth = requireAuthFromSession(session, routes.home.href())
+      if (auth instanceof Response) return auth
+
+      try {
+        let fields = await getFileFields(auth, params.fileId)
+        return Response.json(fields)
+      } catch (error) {
+        if (error instanceof FilesApiError && error.status < 500) {
+          return Response.json({ error: error.message }, { status: error.status })
+        }
+        let message = error instanceof Error ? error.message : 'File fields failed.'
         return Response.json({ error: message }, { status: 502 })
       }
     },
