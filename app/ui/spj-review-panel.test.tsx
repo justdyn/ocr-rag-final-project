@@ -70,6 +70,8 @@ function makeDraft(overrides: Partial<{
     date: string
     currency: string
     lines: { desc: string; qty: number; unit_price: number; line_total: number; confidence?: number }[]
+    confidence?: number
+    below_threshold?: boolean
   }
   document_total_computed: number
   confirmed: boolean
@@ -207,6 +209,44 @@ describe('spj-review-panel component', () => {
     let downloadLink = panel.querySelector('a[href*="/export"]')
     assert.ok(downloadLink)
     assert.equal(downloadLink.getAttribute('data-disabled'), 'true')
+    view.cleanup()
+  })
+
+  it('Confirm disabled and shows low-confidence notice when below_threshold', () => {
+    let view = render(
+      <SpjReviewPanel
+        initialDraft={makeDraft({
+          confirmed: false,
+          fields: {
+            vendor: 'PT Vendor',
+            date: '2026-01-15',
+            currency: 'IDR',
+            lines: [{ desc: 'Item A', qty: 1, unit_price: 1000, line_total: 1000 }],
+            confidence: 0.2,
+            below_threshold: true,
+          },
+          document_total_computed: 1000,
+        })}
+      />
+    )
+    let panel = view.$('[data-spj-review-panel]')
+    assert.ok(panel)
+
+    // Confirm button exists but is disabled
+    let buttons = panel.querySelectorAll('button')
+    let confirmButton: HTMLButtonElement | null = null
+    for (let btn of Array.from(buttons)) {
+      if (btn.textContent?.includes(SHELL_COPY.spjReviewConfirm)) {
+        confirmButton = btn
+        break
+      }
+    }
+    assert.ok(confirmButton, 'confirm button exists')
+    assert.equal(confirmButton.disabled, true)
+
+    // Notice text includes low-confidence copy
+    assert.match(panel.textContent ?? '', /Confidence below threshold — cannot confirm or download\./)
+
     view.cleanup()
   })
 })

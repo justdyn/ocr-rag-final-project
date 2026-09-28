@@ -16,7 +16,8 @@ from app.dependencies.auth import CurrentUser
 from app.models.file import File
 from app.models.knowledge import Knowledge, KnowledgeFile
 from app.models.spj_draft import SpjDraft
-from app.services.spj_fields import compute_document_total, render_accountability_stub
+from app.core.config import get_settings
+from app.services.spj_fields import compute_document_total, render_accountability_stub, with_threshold
 
 router = APIRouter(tags=["spj"])
 
@@ -30,7 +31,8 @@ async def _get_owned_kb(db: AsyncSession, user_id: str, knowledge_id: str) -> Kn
 
 def _build_snapshot(member_files: list[File]) -> dict[str, Any]:
     """Concat ready member files' stored `data.fields`: lines in file order,
-    first non-null vendor/date wins. Files without parseable fields are skipped."""
+    first non-null vendor/date wins. Files without parseable fields are skipped.
+    Then annotate with mean line confidence and below_threshold via settings."""
     lines: list[dict[str, Any]] = []
     vendor: str | None = None
     date: str | None = None
@@ -41,7 +43,8 @@ def _build_snapshot(member_files: list[File]) -> dict[str, Any]:
         lines.extend(fields.get("lines") or [])
         vendor = vendor if vendor is not None else fields.get("vendor")
         date = date if date is not None else fields.get("date")
-    return {"vendor": vendor, "date": date, "currency": "IDR", "lines": lines}
+    snapshot = {"vendor": vendor, "date": date, "currency": "IDR", "lines": lines}
+    return with_threshold(snapshot, get_settings().spj_extract_min_confidence)
 
 
 def _to_body(draft: SpjDraft) -> dict[str, Any]:
@@ -112,11 +115,12 @@ async def confirm_spj_draft(
     current_user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict[str, Any]:
-    # ponytail: FR-10 confidence gate skipped — draft snapshot fields carry no
-    # confidence (extract never wrote one); add gate when fields gain a score.
     draft = await db.get(SpjDraft, draft_id)
     if draft is None or draft.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Draft not found")
+    fields = draft.fields if isinstance(draft.fields, dict) else {}
+    if fields.get("below_threshold"):
+        raise HTTPException(status_code=422, detail="Confidence below threshold")
     draft.confirmed = True  # idempotent: re-confirm just bumps updated_at
     draft.updated_at = int(time.time())
     await db.commit()
@@ -132,9 +136,11 @@ async def export_spj_draft(
     draft = await db.get(SpjDraft, draft_id)
     if draft is None or draft.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Draft not found")
+    fields = draft.fields if isinstance(draft.fields, dict) else {}
+    if fields.get("below_threshold"):
+        raise HTTPException(status_code=422, detail="Confidence below threshold")
     if not draft.confirmed:
         raise HTTPException(status_code=409, detail="Draft not confirmed")
-    fields = draft.fields if isinstance(draft.fields, dict) else {}
     total = compute_document_total(fields)
     html = render_accountability_stub(fields, total)
     return HTMLResponse(

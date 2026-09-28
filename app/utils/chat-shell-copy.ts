@@ -61,4 +61,6 @@ export const SHELL_COPY = {
   spjReviewColLineTotal: 'Line total',
   // SPJ Draft action (Phase B5.1)
   spjDraftAction: 'Draft SPJ',
+  // SPJ Review low confidence (Phase C / FR-10)
+  spjReviewLowConfidence: 'Confidence below threshold — cannot confirm or download.',
 } as const

@@ -78,6 +78,26 @@ def extract_fields(
     }
 
 
+def with_threshold(fields: dict[str, Any], min_confidence: float) -> dict[str, Any]:
+    """Return a new fields dict annotated with mean line confidence and below_threshold.
+
+    Immutable: does not mutate the input dict. Confidence is 0 when no lines.
+    Lines without a confidence field (legacy data) default to 1.0 so they don't
+    drag down the mean — only newly extracted lines carry explicit scores.
+    """
+    lines = fields.get("lines") if isinstance(fields.get("lines"), list) else []
+    if lines:
+        confidence = round(
+            sum(float(l.get("confidence", 1.0)) for l in lines) / len(lines), 4
+        )
+    else:
+        confidence = 0
+    out = dict(fields)
+    out["confidence"] = confidence
+    out["below_threshold"] = confidence < min_confidence
+    return out
+
+
 def compute_document_total(fields: dict[str, Any]) -> int:
     """Always sum line totals in Python — never ask an LLM to sum."""
     return sum(l["line_total"] for l in fields["lines"])

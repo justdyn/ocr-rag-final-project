@@ -45,6 +45,8 @@ export interface SpjFields {
   date: string
   currency: string
   lines: SpjLineItem[]
+  confidence?: number
+  below_threshold?: boolean
   [key: string]: SerializableValue
 }
 
@@ -155,6 +157,9 @@ export const SpjReviewPanel = clientEntry(
     }
 
     return () => {
+      const belowThreshold = draft.fields?.below_threshold === true
+      const showNotice = belowThreshold || notice
+
       return (
         <div mix={spjReviewRootStyle} data-spj-review-panel="">
           <div mix={spjReviewHeaderStyle}>
@@ -163,7 +168,7 @@ export const SpjReviewPanel = clientEntry(
               {!draft.confirmed ? (
                 <button
                   type="button"
-                  disabled={confirming}
+                  disabled={confirming || belowThreshold}
                   mix={[
                     spjReviewConfirmStyle,
                     on('click', () => {
@@ -184,7 +189,11 @@ export const SpjReviewPanel = clientEntry(
             </div>
           </div>
 
-          {notice ? <p mix={spjReviewNoticeStyle}>{notice}</p> : null}
+          {showNotice ? (
+            <p mix={spjReviewNoticeStyle}>
+              {belowThreshold ? SHELL_COPY.spjReviewLowConfidence : notice}
+            </p>
+          ) : null}
 
           {renderLines()}
         </div>

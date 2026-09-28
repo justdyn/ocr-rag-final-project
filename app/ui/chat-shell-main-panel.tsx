@@ -1,7 +1,7 @@
 /**
  * Main chat column — hero, thread, SSE send (app/ui/ clientEntry, §3.5).
  * Composer attach/implicit-KB lives in chat-shell-composer.tsx (§2.2).
- * Viewport follow / ↓ / generating dots: .docs/prd-chat-viewport.md.
+ * Viewport follow / ↓ / generating dots: .docs/prd/prds/chat-viewport.md.
  */
 import { clientEntry, ref, type Handle, type SerializableProps } from 'remix/ui'
 
