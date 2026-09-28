@@ -153,7 +153,7 @@ describe('MarkdownRender — citations', () => {
     })
     let chip = Array.from(view.$$('button')).find((b) => b.textContent === '[2]')
     assert.ok(chip, 'citation chip rendered')
-    assert.deepEqual(seen, [{ id: 2, key: 'k-b0-0-c0-2' }])
+    assert.deepEqual(seen, [{ id: 2, key: 'k-b0-0-c1-2' }])
     assert.match(view.container.textContent ?? '', /Alpha/)
     view.cleanup()
   })

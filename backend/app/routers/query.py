@@ -23,7 +23,8 @@ async def query_documents(
 ) -> QueryResponse:
     """Non-streaming retrieval for evaluation, Remix loaders, and debugging.
 
-    ``mode=hybrid`` (default) runs BM25 + vector + weighted RRF + cosine rerank.
+    ``mode=hybrid`` (default) runs BM25 + dense, fused with weighted RRF (c=60); RRF order is final.
+    Cosine / ``rerank_score`` is diagnostic only (do not re-sort by cosine).
     ``mode=vector_only`` skips sparse/RRF — evaluation toggle only, not a chat UI setting.
     """
     try:
