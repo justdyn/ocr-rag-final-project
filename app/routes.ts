@@ -32,13 +32,14 @@ export const routes = route({
     destroy: del(':fileId'),
   }),
   // SPJ draft BFF (Phase B4+B5): create/show/confirm JSON proxy + gated export
-  // passthrough + review UI; ownership/409 stay upstream. No PATCH.
+  // passthrough + review UI; ownership/409 stay upstream. PATCH added Phase E.
   spj: route('spj', {
     create: post('knowledge/:knowledgeId/draft'),
     show: get('drafts/:draftId'),
     confirm: post('drafts/:draftId/confirm'),
     exportDraft: get('drafts/:draftId/export'),
     review: get('drafts/:draftId/review'),
+    update: patch('drafts/:draftId'),
   }),
   // Create/addFile/chat BFF for implicit per-chat KB; GET index/show redirect (no management UI).
   knowledge: route('knowledge', {

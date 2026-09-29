@@ -8,6 +8,7 @@ import {
   type Handle,
   type SerializableProps,
   type SerializableValue,
+  css,
 } from 'remix/ui'
 
 import { routes } from '../routes.ts'
@@ -62,11 +63,27 @@ export interface SpjReviewPanelProps extends SerializableProps {
   initialDraft: SpjDraftSerializable
 }
 
+const spjReviewInputStyle = css({
+  width: '100%',
+  textAlign: 'right',
+  padding: '4px 8px',
+  background: 'transparent',
+  border: '1px solid var(--home-border)',
+  borderRadius: '4px',
+  font: 'inherit',
+  fontSize: '14px',
+  lineHeight: '20px',
+  color: 'var(--home-fg)',
+  fontVariantNumeric: 'tabular-nums',
+  '&:focus': { outline: 'none', borderColor: 'var(--home-fg)', boxShadow: '0 0 0 2px var(--home-surface)' },
+})
+
 export const SpjReviewPanel = clientEntry(
   import.meta.url,
   function SpjReviewPanel(handle: Handle<SpjReviewPanelProps>) {
     let draft = handle.props.initialDraft
     let confirming = false
+    let saving = false
     let notice: string | null = null
 
     handle.signal.addEventListener('abort', () => {
@@ -98,6 +115,35 @@ export const SpjReviewPanel = clientEntry(
       handle.update()
     }
 
+    async function handleSave() {
+      if (draft.confirmed || saving) return
+      saving = true
+      notice = null
+      handle.update()
+
+      let lines = draft.fields?.lines?.map((line) => ({ ...line })) ?? []
+
+      let res = await fetch(routes.spj.update.href({ draftId: draft.id }), {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lines }),
+      })
+
+      if (!res.ok) {
+        let errorJson = await res.json().catch(() => ({}))
+        notice = (errorJson as { error?: string }).error ?? 'Failed to save changes.'
+        saving = false
+        handle.update()
+        return
+      }
+
+      let updatedDraft = (await res.json()) as SpjDraftSerializable
+      draft = updatedDraft
+      saving = false
+      handle.update()
+    }
+
     function handleDownload() {
       if (!draft.confirmed) return
       window.location.href = routes.spj.exportDraft.href({ draftId: draft.id })
@@ -116,11 +162,18 @@ export const SpjReviewPanel = clientEntry(
       }
     }
 
+    function computeLocalTotal(): number {
+      const lines = draft.fields?.lines ?? []
+      return lines.reduce((sum, line) => sum + (line.qty || 0) * (line.unit_price || 0), 0)
+    }
+
     function renderLines() {
       let lines = draft.fields?.lines ?? []
       if (lines.length === 0) {
         return <p mix={spjReviewEmptyStyle}>{SHELL_COPY.spjReviewEmptyLines}</p>
       }
+
+      const isEditing = !draft.confirmed
 
       return (
         <div mix={spjReviewTableStyle} role="table">
@@ -135,21 +188,68 @@ export const SpjReviewPanel = clientEntry(
               <div mix={spjReviewCellDescStyle} role="cell">
                 <p mix={spjReviewDescStyle}>{line.desc}</p>
               </div>
-              <p mix={spjReviewCellNumberStyle} role="cell" style={{ textAlign: 'right' }}>
-                {line.qty}
-              </p>
-              <p mix={spjReviewCellNumberStyle} role="cell" style={{ textAlign: 'right' }}>
-                {formatCurrency(line.unit_price, draft.fields.currency)}
-              </p>
-              <p mix={spjReviewCellNumberStyle} role="cell" style={{ textAlign: 'right' }}>
-                {formatCurrency(line.line_total, draft.fields.currency)}
-              </p>
+              {isEditing ? (
+                <>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={line.qty}
+                    mix={[
+                      spjReviewCellNumberStyle,
+                      spjReviewInputStyle,
+                      on('change', (event) => {
+                        const val = Math.max(0, parseInt(event.currentTarget.value, 10) || 0)
+                        const newLines = [...draft.fields.lines]
+                        newLines[idx] = { ...newLines[idx], qty: val }
+                        draft.fields = { ...draft.fields, lines: newLines }
+                        handle.update()
+                      }),
+                    ]}
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={line.unit_price}
+                    mix={[
+                      spjReviewCellNumberStyle,
+                      spjReviewInputStyle,
+                      on('change', (event) => {
+                        const val = Math.max(0, parseInt(event.currentTarget.value, 10) || 0)
+                        const newLines = [...draft.fields.lines]
+                        newLines[idx] = { ...newLines[idx], unit_price: val }
+                        draft.fields = { ...draft.fields, lines: newLines }
+                        handle.update()
+                      }),
+                    ]}
+                  />
+                  <p mix={spjReviewCellNumberStyle} role="cell" style={{ textAlign: 'right' }}>
+                    {formatCurrency(line.qty * line.unit_price, draft.fields.currency)}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p mix={spjReviewCellNumberStyle} role="cell" style={{ textAlign: 'right' }}>
+                    {line.qty}
+                  </p>
+                  <p mix={spjReviewCellNumberStyle} role="cell" style={{ textAlign: 'right' }}>
+                    {formatCurrency(line.unit_price, draft.fields.currency)}
+                  </p>
+                  <p mix={spjReviewCellNumberStyle} role="cell" style={{ textAlign: 'right' }}>
+                    {formatCurrency(line.line_total, draft.fields.currency)}
+                  </p>
+                </>
+              )}
             </div>
           ))}
           <div mix={spjReviewTotalStyle}>
             <span>{SHELL_COPY.spjReviewTotalLabel}</span>
             <span mix={spjReviewTotalValueStyle}>
-              {formatCurrency(draft.document_total_computed, draft.fields.currency)}
+              {formatCurrency(
+                draft.confirmed ? draft.document_total_computed : computeLocalTotal(),
+                draft.fields.currency
+              )}
             </span>
           </div>
         </div>
@@ -159,12 +259,27 @@ export const SpjReviewPanel = clientEntry(
     return () => {
       const belowThreshold = draft.fields?.below_threshold === true
       const showNotice = belowThreshold || notice
+      const isEditing = !draft.confirmed
 
       return (
         <div mix={spjReviewRootStyle} data-spj-review-panel="">
           <div mix={spjReviewHeaderStyle}>
             <h1 mix={spjReviewTitleStyle}>{SHELL_COPY.spjReviewTitle}</h1>
             <div mix={spjReviewActionsStyle}>
+              {isEditing ? (
+                <button
+                  type="button"
+                  disabled={saving}
+                  mix={[
+                    spjReviewConfirmStyle,
+                    on('click', () => {
+                      void handleSave()
+                    }),
+                  ]}
+                >
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+              ) : null}
               {!draft.confirmed ? (
                 <button
                   type="button"

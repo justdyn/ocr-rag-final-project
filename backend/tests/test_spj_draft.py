@@ -496,3 +496,192 @@ def test_empty_lines_draft_below_threshold():
             assert res.json()["detail"] == "Confidence below threshold"
 
     asyncio.run(run())
+
+
+def test_patch_draft_updates_lines_and_recomputes_total():
+    """PATCH replaces lines, recomputes line_total from qty*unit_price, returns updated total."""
+    async def run():
+        client, _, _ = await _setup()
+        async with client as c:
+            res = await c.post("/api/knowledge/k1/spj/draft")
+            assert res.status_code == 200, res.text
+            draft_id = res.json()["id"]
+
+            # Original total = 25000 (10000 + 5000 + 10000)
+            # Patch: change first line qty from 1 to 2, unit_price stays 10000 -> line_total 20000
+            # Second line qty 1, unit_price 5000 -> 5000
+            # Third line qty 1, unit_price 10000 -> 10000
+            # New total = 20000 + 5000 + 10000 = 35000
+            patch_body = {
+                "lines": [
+                    {"desc": "Line 1", "qty": 2, "unit_price": 10000},
+                    {"desc": "Line 2", "qty": 1, "unit_price": 5000},
+                    {"desc": "Line 3", "qty": 1, "unit_price": 10000},
+                ]
+            }
+            res = await c.patch(f"/api/spj/drafts/{draft_id}", json=patch_body)
+            assert res.status_code == 200, res.text
+            body = res.json()
+            assert body["id"] == draft_id
+            assert body["knowledge_id"] == "k1"
+            assert body["confirmed"] is False
+            # document_total_computed must match sum of recomputed line_total
+            assert body["document_total_computed"] == 35000
+            lines = body["fields"]["lines"]
+            assert len(lines) == 3
+            assert lines[0]["line_total"] == 20000
+            assert lines[1]["line_total"] == 5000
+            assert lines[2]["line_total"] == 10000
+            # Confirm still works after patch
+            res = await c.post(f"/api/spj/drafts/{draft_id}/confirm")
+            assert res.status_code == 200
+            assert res.json()["confirmed"] is True
+
+    asyncio.run(run())
+
+
+def test_patch_draft_confirmed_returns_409():
+    """PATCH on confirmed draft returns 409 Draft already confirmed."""
+    async def run():
+        client, _, _ = await _setup()
+        async with client as c:
+            res = await c.post("/api/knowledge/k1/spj/draft")
+            assert res.status_code == 200, res.text
+            draft_id = res.json()["id"]
+
+            # Confirm first
+            res = await c.post(f"/api/spj/drafts/{draft_id}/confirm")
+            assert res.status_code == 200
+            assert res.json()["confirmed"] is True
+
+            # Now PATCH should fail with 409
+            res = await c.patch(f"/api/spj/drafts/{draft_id}", json={"lines": []})
+            assert res.status_code == 409, res.text
+            assert res.json()["detail"] == "Draft already confirmed"
+
+    asyncio.run(run())
+
+
+def test_patch_draft_cross_user_returns_404():
+    """PATCH by non-owner returns 404 (never 403)."""
+    async def run():
+        client, current, _ = await _setup()
+        async with client as c:
+            res = await c.post("/api/knowledge/k1/spj/draft")
+            assert res.status_code == 200, res.text
+            draft_id = res.json()["id"]
+
+            # Switch to other user
+            current["id"] = "u2"
+            res = await c.patch(f"/api/spj/drafts/{draft_id}", json={"lines": []})
+            assert res.status_code == 404
+            assert res.json()["detail"] == "Draft not found"
+
+    asyncio.run(run())
+
+
+def test_patch_draft_missing_returns_404():
+    """PATCH non-existent draft returns 404."""
+    async def run():
+        client, _, _ = await _setup()
+        async with client as c:
+            res = await c.patch("/api/spj/drafts/missing", json={"lines": []})
+            assert res.status_code == 404
+            assert res.json()["detail"] == "Draft not found"
+
+    asyncio.run(run())
+
+
+def test_patch_draft_below_threshold_still_editable():
+    """Below-threshold draft can still be edited; confirm gate unchanged."""
+    async def run():
+        client, _, _ = await _setup_confidence_test()
+        async with client as c:
+            res = await c.post("/api/knowledge/k_low/spj/draft")
+            assert res.status_code == 200, res.text
+            draft_id = res.json()["id"]
+            assert res.json()["fields"]["below_threshold"] is True
+
+            # PATCH should succeed even when below_threshold
+            res = await c.patch(f"/api/spj/drafts/{draft_id}", json={
+                "lines": [{"desc": "Edited", "qty": 5, "unit_price": 1000}]
+            })
+            assert res.status_code == 200, res.text
+            body = res.json()
+            assert body["document_total_computed"] == 5000
+            assert body["fields"]["below_threshold"] is True  # unchanged
+
+            # Confirm should still fail with 422
+            res = await c.post(f"/api/spj/drafts/{draft_id}/confirm")
+            assert res.status_code == 422
+            assert res.json()["detail"] == "Confidence below threshold"
+
+    asyncio.run(run())
+
+
+def test_patch_draft_coerces_numbers_safely():
+    """PATCH coerces qty/unit_price to int; invalid values default safely."""
+    async def run():
+        client, _, _ = await _setup()
+        async with client as c:
+            res = await c.post("/api/knowledge/k1/spj/draft")
+            assert res.status_code == 200, res.text
+            draft_id = res.json()["id"]
+
+            # String numbers, missing fields, invalid values
+            res = await c.patch(f"/api/spj/drafts/{draft_id}", json={
+                "lines": [
+                    {"desc": "A", "qty": "3", "unit_price": "2000"},  # string -> int
+                    {"desc": "B", "qty": None, "unit_price": "abc"},  # None/invalid -> default 1, 0
+                    {"desc": "C"},  # missing qty/unit_price -> defaults
+                ]
+            })
+            assert res.status_code == 200, res.text
+            body = res.json()
+            lines = body["fields"]["lines"]
+            assert lines[0]["line_total"] == 6000    # 3 * 2000
+            assert lines[1]["line_total"] == 0       # 1 * 0
+            assert lines[2]["line_total"] == 0       # 1 * 0
+            assert body["document_total_computed"] == 6000
+            # Stored qty/unit_price are coerced ints (clamped >= 0)
+            assert lines[0]["qty"] == 3
+            assert lines[0]["unit_price"] == 2000
+            assert lines[1]["qty"] == 1
+            assert lines[1]["unit_price"] == 0
+            assert lines[2]["qty"] == 1
+            assert lines[2]["unit_price"] == 0
+
+    asyncio.run(run())
+
+
+def test_patch_draft_preserves_confidence_and_extra_fields():
+    """PATCH preserves confidence and other line fields; server recomputes line_total."""
+    async def run():
+        client, _, _ = await _setup()
+        async with client as c:
+            res = await c.post("/api/knowledge/k1/spj/draft")
+            assert res.status_code == 200, res.text
+            draft_id = res.json()["id"]
+
+            # Send lines with confidence and extra fields
+            res = await c.patch(f"/api/spj/drafts/{draft_id}", json={
+                "lines": [
+                    {"desc": "A", "qty": 2, "unit_price": 5000, "confidence": 0.9, "extra": "keep"},
+                    {"desc": "B", "qty": 1, "unit_price": 3000, "confidence": 0.7},
+                ]
+            })
+            assert res.status_code == 200, res.text
+            body = res.json()
+            lines = body["fields"]["lines"]
+            # Server recomputes line_total
+            assert lines[0]["line_total"] == 10000
+            assert lines[1]["line_total"] == 3000
+            # Confidence and extra fields preserved
+            assert lines[0]["confidence"] == 0.9
+            assert lines[0]["extra"] == "keep"
+            assert lines[1]["confidence"] == 0.7
+            # Stored qty/unit_price are ints
+            assert lines[0]["qty"] == 2
+            assert lines[0]["unit_price"] == 5000
+
+    asyncio.run(run())

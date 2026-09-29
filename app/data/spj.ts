@@ -62,3 +62,16 @@ export async function exportSpjDraft(
     accessToken,
   })
 }
+
+export async function patchSpjDraft(
+  accessToken: string,
+  draftId: string,
+  lines: unknown[],
+): Promise<SpjDraftRecord> {
+  let response = await backendFetch(
+    `/api/spj/drafts/${encodeURIComponent(draftId)}`,
+    { method: 'PATCH', accessToken, body: JSON.stringify({ lines }) },
+  )
+  await throwIfNotOk(response)
+  return (await response.json()) as SpjDraftRecord
+}

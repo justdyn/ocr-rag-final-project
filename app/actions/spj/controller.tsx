@@ -1,6 +1,6 @@
 /**
  * SPJ BFF (Phase B4+B5) — draft create/show/confirm JSON proxy + gated HTML
- * export passthrough + review UI. Totals/ownership stay upstream; no PATCH.
+ * export passthrough + review UI. Totals/ownership stay upstream. PATCH (Phase E).
  */
 import { createController } from 'remix/router'
 
@@ -10,6 +10,7 @@ import {
   createSpjDraft,
   exportSpjDraft,
   getSpjDraft,
+  patchSpjDraft,
 } from '../../data/spj.ts'
 import { loadChatShellServerContext } from '../../data/shell-context.ts'
 import { requireAuthFromSession } from '../../middleware/require-auth.ts'
@@ -60,6 +61,20 @@ export default createController(routes.spj, {
         return Response.json(draft)
       } catch (error) {
         return asErrorResponse(error, 'Draft confirm failed.')
+      }
+    },
+
+    async update({ session, params, request }) {
+      let auth = requireAuthFromSession(session, routes.home.href())
+      if (auth instanceof Response) return auth
+
+      try {
+        let body = await request.json()
+        let lines = Array.isArray(body?.lines) ? body.lines : []
+        let draft = await patchSpjDraft(auth, params.draftId, lines)
+        return Response.json(draft)
+      } catch (error) {
+        return asErrorResponse(error, 'Draft update failed.')
       }
     },
 

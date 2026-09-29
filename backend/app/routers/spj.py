@@ -127,6 +127,54 @@ async def confirm_spj_draft(
     return _to_body(draft)
 
 
+def _recompute_line_totals(lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Recompute line_total from qty * unit_price for each line. Coerce numbers safely.
+    Writes back coerced qty/unit_price (clamped >= 0) so stored values match what was used."""
+    out: list[dict[str, Any]] = []
+    for line in lines:
+        if not isinstance(line, dict):
+            continue
+        try:
+            qty = int(line.get("qty", 1) or 1)
+        except (TypeError, ValueError):
+            qty = 1
+        try:
+            unit_price = int(line.get("unit_price", 0) or 0)
+        except (TypeError, ValueError):
+            unit_price = 0
+        qty = max(0, qty)
+        unit_price = max(0, unit_price)
+        new_line = dict(line)
+        new_line["qty"] = qty
+        new_line["unit_price"] = unit_price
+        new_line["line_total"] = qty * unit_price
+        out.append(new_line)
+    return out
+
+
+@router.patch("/api/spj/drafts/{draft_id}")
+async def update_spj_draft(
+    draft_id: str,
+    current_user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    body: dict[str, Any],
+) -> dict[str, Any]:
+    draft = await db.get(SpjDraft, draft_id)
+    if draft is None or draft.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Draft not found")
+    if draft.confirmed:
+        raise HTTPException(status_code=409, detail="Draft already confirmed")
+
+    lines = body.get("lines") if isinstance(body.get("lines"), list) else []
+    fields = draft.fields if isinstance(draft.fields, dict) else {}
+    fields = dict(fields)
+    fields["lines"] = _recompute_line_totals(lines)
+    draft.fields = fields
+    draft.updated_at = int(time.time())
+    await db.commit()
+    return _to_body(draft)
+
+
 @router.get("/api/spj/drafts/{draft_id}/export")
 async def export_spj_draft(
     draft_id: str,
