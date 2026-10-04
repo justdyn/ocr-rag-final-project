@@ -11,8 +11,9 @@ import {
 import { loadChatShellServerContext } from '../../data/shell-context.ts'
 import { requireAuthFromSession } from '../../middleware/require-auth.ts'
 import { routes } from '../../routes.ts'
-import { ChatShellPage } from '../../ui/chat-shell-page.tsx'
+import { AppShellPage } from '../../ui/app-shell-page.tsx'
 import { LibraryPanel } from '../../ui/library-panel.tsx'
+import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'
 
 const EMPTY_PAGE: FileListPage = {
   items: [],
@@ -39,21 +40,21 @@ export default createController(routes.library, {
       }
 
       return render(
-        <ChatShellPage
+        <AppShellPage
           title="Library"
+          pageTitle={SHELL_COPY.library}
           authenticated
           activeNav="library"
           activeKnowledgeId={shell.activeKnowledgeId}
-          activeKnowledgeName={shell.activeKnowledgeName}
-          chatKnowledgeId={shell.chatKnowledgeId}
-          chatKnowledgeName={shell.chatKnowledgeName}
           activeConversationId={shell.activeConversationId}
           conversations={shell.conversations}
           userName={shell.userName}
           userEmail={shell.userEmail}
+          userRole={shell.userRole}
+          userProfileImageUrl={shell.userProfileImageUrl}
         >
           <LibraryPanel initialPage={initialPage} />
-        </ChatShellPage>,
+        </AppShellPage>,
       )
     },
   },

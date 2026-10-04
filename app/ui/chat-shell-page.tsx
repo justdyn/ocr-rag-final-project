@@ -1,12 +1,12 @@
 /**
- * Document + unified shell wrapper for `/` chat landing (app/ui/, §2.1).
+ * Document + shell wrapper for LLM chat (`/` and `/chat/:id`).
+ * Non-chat routes use AppShellPage.
  */
-import type { Handle, RemixNode } from 'remix/ui'
+import type { Handle } from 'remix/ui'
 
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import type { ConversationSummary } from '../utils/chat-types.ts'
 import { messagesFromPersisted, type PersistedMessage } from '../utils/chat-types.ts'
-import { ChatShellContentMain } from './chat-shell-content-main.tsx'
 import { ChatShellHead } from './chat-shell-head.tsx'
 import { ChatShellLayout } from './chat-shell-layout.tsx'
 import { ChatShellMainPanel } from './chat-shell-main-panel.tsx'
@@ -18,7 +18,6 @@ export type ChatShellPageProps = {
   authenticated?: boolean
   activeNav?: ShellActiveNav
   activeKnowledgeId?: string | null
-  activeKnowledgeName?: string | null
   /** Composer scope on `/` — omit/null so attach can auto-create a KB. */
   chatKnowledgeId?: string | null
   chatKnowledgeName?: string | null
@@ -30,8 +29,9 @@ export type ChatShellPageProps = {
   /** Logged-in user from /api/auth/me — sidebar account row. */
   userName?: string
   userEmail?: string
-  /** Optional slot for non-chat shell bodies (Library, etc.). */
-  children?: RemixNode
+  /** Logged-in user role from /api/auth/me — admin-gated UI (Settings → LLM / API). */
+  userRole?: string
+  userProfileImageUrl?: string | null
 }
 
 export function ChatShellPage(handle: Handle<ChatShellPageProps>) {
@@ -41,7 +41,6 @@ export function ChatShellPage(handle: Handle<ChatShellPageProps>) {
       authenticated = false,
       activeNav = 'chat',
       activeKnowledgeId = null,
-      activeKnowledgeName = null,
       chatKnowledgeId = null,
       chatKnowledgeName = null,
       activeConversationId = null,
@@ -50,26 +49,9 @@ export function ChatShellPage(handle: Handle<ChatShellPageProps>) {
       initialMessages = [],
       userName = '',
       userEmail = '',
-      children,
+      userRole = '',
+      userProfileImageUrl = null,
     } = handle.props
-
-    let mainColumn = children ? (
-      <ChatShellContentMain
-        authenticated={authenticated}
-        knowledgeName={activeNav === 'library' ? SHELL_COPY.library : activeKnowledgeName}
-      >
-        {children}
-      </ChatShellContentMain>
-    ) : (
-      <ChatShellMainPanel
-        authenticated={authenticated}
-        activeKnowledgeId={chatKnowledgeId}
-        activeKnowledgeName={chatKnowledgeName}
-        initialConversationId={activeConversationId}
-        initialLlmModel={initialLlmModel}
-        initialMessages={messagesFromPersisted(initialMessages)}
-      />
-    )
 
     return (
       <Document head={<ChatShellHead />} title={title}>
@@ -81,8 +63,17 @@ export function ChatShellPage(handle: Handle<ChatShellPageProps>) {
           conversations={conversations}
           userName={userName}
           userEmail={userEmail}
+          userRole={userRole}
+          userProfileImageUrl={userProfileImageUrl}
         >
-          {mainColumn}
+          <ChatShellMainPanel
+            authenticated={authenticated}
+            activeKnowledgeId={chatKnowledgeId}
+            activeKnowledgeName={chatKnowledgeName}
+            initialConversationId={activeConversationId}
+            initialLlmModel={initialLlmModel}
+            initialMessages={messagesFromPersisted(initialMessages)}
+          />
         </ChatShellLayout>
       </Document>
     )

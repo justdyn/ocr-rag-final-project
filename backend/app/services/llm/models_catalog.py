@@ -13,9 +13,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.services.llm.base import LLMConfigError, LLMProviderError
+from app.services.llm_config import resolve_llm_settings
 
 # Exclude non-generalist ids when detectable from the slug alone.
 _NON_CHAT_RE = re.compile(
@@ -167,21 +169,22 @@ async def _cached_all(*, api_key: str, base_url: str, timeout: float) -> list[di
 
 
 async def list_models(
+    db: AsyncSession,
     *,
     q: str | None = None,
     offset: int = 0,
     limit: int = _DEFAULT_LIMIT,
 ) -> ModelsPage:
     """Return a page of generalist chat models for the configured provider."""
-    settings = get_settings()
-    api_key = (settings.llm_api_key or "").strip()
+    resolved = await resolve_llm_settings(db)
+    api_key = (resolved.api_key or "").strip()
     if not api_key:
         raise LLMConfigError(
             "LLM_API_KEY is not configured. Set it in the environment "
             "(see backend/.env.example) before calling /api/models."
         )
-    base_url = settings.llm_base_url.rstrip("/")
-    timeout = settings.llm_timeout_seconds
+    base_url = resolved.base_url
+    timeout = resolved.timeout_seconds
     safe_offset = max(0, offset)
     safe_limit = min(max(1, limit), _MAX_LIMIT)
 

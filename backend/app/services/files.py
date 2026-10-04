@@ -47,6 +47,9 @@ MIME_BY_EXTENSION = {
 PDF_MAGIC = b"%PDF-"
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 JPEG_MAGIC = b"\xff\xd8\xff"
+# WebP: RIFF container, "WEBP" at offset 8
+WEBP_MAGIC = b"RIFF"
+WEBP_MAGIC2 = b"WEBP"
 # OOXML (.docx/.pptx/.xlsx) are ZIP containers; the empty-archive and
 # spanned-set markers are also ZIP and must not fall through to "text".
 ZIP_MAGICS = (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")
@@ -61,6 +64,7 @@ KIND_BY_EXTENSION = {
     ".docx": "ooxml",
     ".pptx": "ooxml",
     ".xlsx": "ooxml",
+    ".webp": "webp",
 }
 
 # Mirror frontend libraryFileIsImage filename suffixes (+ meta.content_type image/*).
@@ -90,6 +94,8 @@ def sniff_content_kind(data: bytes) -> str | None:
         return "png"
     if data.startswith(JPEG_MAGIC):
         return "jpeg"
+    if data.startswith(WEBP_MAGIC) and len(data) >= 12 and data[8:12] == WEBP_MAGIC2:
+        return "webp"
     if any(data.startswith(magic) for magic in ZIP_MAGICS):
         return "zip"
     return None

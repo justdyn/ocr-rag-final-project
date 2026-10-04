@@ -93,7 +93,6 @@ export default createController(routes.chat, {
           authenticated
           activeNav="chat"
           activeKnowledgeId={shell.activeKnowledgeId}
-          activeKnowledgeName={shell.activeKnowledgeName}
           chatKnowledgeId={shell.chatKnowledgeId}
           chatKnowledgeName={shell.chatKnowledgeName}
           activeConversationId={shell.activeConversationId}
@@ -102,6 +101,8 @@ export default createController(routes.chat, {
           initialMessages={shell.initialMessages}
           userName={shell.userName}
           userEmail={shell.userEmail}
+          userRole={shell.userRole}
+          userProfileImageUrl={shell.userProfileImageUrl}
         />,
       )
     },

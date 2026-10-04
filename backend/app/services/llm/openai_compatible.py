@@ -13,8 +13,8 @@ from typing import Any
 
 import httpx
 
-from app.core.config import get_settings
 from app.services.llm.base import LLMConfigError, LLMProviderError
+from app.services.llm_config import ResolvedLLMSettings
 
 
 class OpenAICompatibleProvider:
@@ -23,16 +23,13 @@ class OpenAICompatibleProvider:
     def __init__(
         self,
         *,
-        api_key: str | None = None,
-        base_url: str | None = None,
+        settings: ResolvedLLMSettings,
         model: str | None = None,
-        timeout_seconds: float | None = None,
     ) -> None:
-        settings = get_settings()
-        self.api_key = (api_key if api_key is not None else settings.llm_api_key) or ""
-        self.base_url = (base_url or settings.llm_base_url).rstrip("/")
-        self.model = model or settings.llm_model
-        self.timeout = timeout_seconds if timeout_seconds is not None else settings.llm_timeout_seconds
+        self.api_key = settings.api_key or ""
+        self.base_url = settings.base_url
+        self.model = model or settings.model
+        self.timeout = settings.timeout_seconds
 
     def require_configured(self) -> None:
         if not self.api_key.strip():
@@ -130,6 +127,6 @@ class OpenAICompatibleProvider:
             return content
 
 
-def get_llm_provider(*, model: str | None = None) -> OpenAICompatibleProvider:
+def get_llm_provider(*, model: str | None = None, settings: ResolvedLLMSettings) -> OpenAICompatibleProvider:
     """Factory used by the chat service. Swap here to add future providers."""
-    return OpenAICompatibleProvider(model=model)
+    return OpenAICompatibleProvider(settings=settings, model=model)

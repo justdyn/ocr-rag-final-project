@@ -44,6 +44,7 @@ import {
 import { BrandLogo } from './chat-shell/brand-logo.tsx'
 import { LucideIcon } from './chat-shell/lucide-icon.tsx'
 import {
+  accountAvatar,
   accountAvatarStyle,
   accountDisplayName,
   accountInitials,
@@ -53,10 +54,11 @@ import {
   accountTriggerStyle,
   accountWrapStyle,
 } from './chat-shell/sidebar-account.tsx'
+import { SettingsModal } from './settings-modal.tsx'
 import { SidebarCta } from './chat-shell/sidebar-cta.tsx'
 import { SidebarNavItem } from './chat-shell/sidebar-nav-item.tsx'
 
-export type ShellActiveNav = 'chat' | 'library'
+export type ShellActiveNav = 'chat' | 'library' | 'profile' | 'help'
 
 export interface ChatSidebarProps extends SerializableProps {
   initialOpen?: boolean
@@ -67,6 +69,8 @@ export interface ChatSidebarProps extends SerializableProps {
   conversations?: ConversationSummary[]
   userName?: string
   userEmail?: string
+  userRole?: string
+  userProfileImageUrl?: string | null
 }
 
 function buildPrimaryNav(
@@ -106,6 +110,7 @@ export const ChatSidebar = clientEntry(
         typeof window === 'undefined' ? null : window.matchMedia(SIDEBAR_MOBILE_QUERY),
       )
     let accountMenuOpen = false
+    let settingsModalOpen = false
     let accountMenuEl: HTMLElement | null = null
     let accountRootEl: HTMLElement | null = null
     // Setup-scope copies of SSR props so client-created chats can appear without reload.
@@ -133,6 +138,17 @@ export const ChatSidebar = clientEntry(
       handle.queueTask(() => {
         if (accountMenuEl) animateMenuFade(accountMenuEl, next)
       })
+    }
+
+    function setSettingsModalOpen(next: boolean) {
+      settingsModalOpen = next
+      handle.update()
+      if (next) {
+        // Body scroll lock for modal
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
     }
 
     // Optimistic rename commit (Enter/blur). Cancel = exit only; revert restores the
@@ -217,6 +233,11 @@ export const ChatSidebar = clientEntry(
           handle.update()
           return
         }
+        // Settings modal owns Esc before account menu / sidebar
+        if (settingsModalOpen) {
+          setSettingsModalOpen(false)
+          return
+        }
         if (accountMenuOpen) {
           setAccountMenuOpen(false)
           return
@@ -292,6 +313,8 @@ export const ChatSidebar = clientEntry(
       let activeNav = handle.props.activeNav ?? 'chat'
       let userName = handle.props.userName ?? ''
       let userEmail = handle.props.userEmail ?? ''
+      let userRole = handle.props.userRole ?? ''
+      let userProfileImageUrl = handle.props.userProfileImageUrl ?? null
       let primaryNav = buildPrimaryNav(authenticated, activeNav, activeConversationId)
       let displayName = accountDisplayName(userName, userEmail)
       let initials = accountInitials(userName, userEmail)
@@ -491,7 +514,7 @@ export const ChatSidebar = clientEntry(
                   role="menu"
                   aria-label="Account menu"
                 >
-                  {accountMenuBody(userName, userEmail)}
+                  {accountMenuBody(userName, userEmail, () => setSettingsModalOpen(true), userProfileImageUrl)}
                 </div>
                 <button
                   type="button"
@@ -518,9 +541,7 @@ export const ChatSidebar = clientEntry(
                     }),
                   ]}
                 >
-                  <span mix={accountAvatarStyle} aria-hidden="true">
-                    {initials}
-                  </span>
+                  {accountAvatar(userName, userEmail, userProfileImageUrl)}
                   <span data-sidebar-label="" mix={accountNameStyle}>
                     {displayName}
                   </span>
@@ -528,6 +549,14 @@ export const ChatSidebar = clientEntry(
               </div>
             </aside>
           </div>
+          {settingsModalOpen && authenticated ? (
+            <SettingsModal
+                    userRole={userRole as 'admin' | 'user'}
+                    userName={userName}
+                    userEmail={userEmail}
+                    onClose={() => setSettingsModalOpen(false)}
+                  />
+          ) : null}
         </>
       )
     }

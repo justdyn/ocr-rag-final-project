@@ -9,6 +9,7 @@ export type AuthUser = {
   email: string
   name: string
   role: string
+  profile_image_url: string | null
 }
 
 export type TokenResponse = {
@@ -101,4 +102,86 @@ export async function logoutUser(): Promise<void> {
   } catch {
     // Network failures must not block clearing the local session cookie.
   }
+}
+
+export async function updateProfileName(
+  accessToken: string,
+  name: string,
+): Promise<AuthResult<AuthUser>> {
+  let response = await backendFetch('/api/profile', {
+    method: 'PATCH',
+    body: { name: name.trim() },
+    accessToken,
+  })
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: { status: response.status, detail: await readDetail(response) },
+    }
+  }
+
+  return { ok: true, data: (await response.json()) as AuthUser }
+}
+
+export async function changePassword(
+  accessToken: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<AuthResult<void>> {
+  let response = await backendFetch('/api/profile/password', {
+    method: 'POST',
+    body: { current_password: currentPassword, new_password: newPassword },
+    accessToken,
+  })
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: { status: response.status, detail: await readDetail(response) },
+    }
+  }
+
+  return { ok: true, data: undefined }
+}
+
+export async function uploadAvatar(
+  accessToken: string,
+  formData: FormData,
+): Promise<AuthResult<AuthUser>> {
+  let response = await backendFetch('/api/profile/avatar', {
+    method: 'POST',
+    body: formData,
+    accessToken,
+  })
+
+  console.log('[uploadAvatar] response.status:', response.status, 'response.ok:', response.ok)
+  if (!response.ok) {
+    let detail = await readDetail(response)
+    console.log('[uploadAvatar] error detail:', detail)
+    return {
+      ok: false,
+      error: { status: response.status, detail },
+    }
+  }
+
+  return { ok: true, data: (await response.json()) as AuthUser }
+}
+
+export async function getAvatar(
+  accessToken: string,
+): Promise<AuthResult<Response>> {
+  let response = await backendFetch('/api/profile/avatar', {
+    method: 'GET',
+    accessToken,
+  })
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: { status: response.status, detail: await readDetail(response) },
+    }
+  }
+
+  return { ok: true, data: response }
 }

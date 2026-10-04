@@ -15,8 +15,9 @@ import {
 import { loadChatShellServerContext } from '../../data/shell-context.ts'
 import { requireAuthFromSession } from '../../middleware/require-auth.ts'
 import { routes } from '../../routes.ts'
-import { ChatShellPage } from '../../ui/chat-shell-page.tsx'
+import { AppShellPage } from '../../ui/app-shell-page.tsx'
 import { SpjReviewPanel, type SpjDraftSerializable } from '../../ui/spj-review-panel.tsx'
+import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'
 
 function asErrorResponse(error: unknown, fallback: string): Response {
   if (error instanceof FilesApiError && error.status < 500) {
@@ -140,21 +141,21 @@ export default createController(routes.spj, {
       }
 
       return render(
-        <ChatShellPage
+        <AppShellPage
           title="SPJ Review"
+          pageTitle={SHELL_COPY.spjReviewTitle}
           authenticated
           activeNav="chat"
           activeKnowledgeId={shell.activeKnowledgeId}
-          activeKnowledgeName={shell.activeKnowledgeName}
-          chatKnowledgeId={shell.chatKnowledgeId}
-          chatKnowledgeName={shell.chatKnowledgeName}
           activeConversationId={shell.activeConversationId}
           conversations={shell.conversations}
           userName={shell.userName}
           userEmail={shell.userEmail}
+          userRole={shell.userRole}
+          userProfileImageUrl={shell.userProfileImageUrl}
         >
           <SpjReviewPanel initialDraft={initialDraft} />
-        </ChatShellPage>,
+        </AppShellPage>,
       )
     },
   },

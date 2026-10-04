@@ -6,12 +6,16 @@ import { on, type Handle, type RemixNode } from 'remix/ui'
 
 import { routes } from '../../routes.ts'
 import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'
-import { SHELL_LUCIDE_ICON } from '../../utils/chat-shell-icons.ts'
+import {
+  SHELL_LUCIDE_ICON,
+  type ShellLucideIconKey,
+} from '../../utils/chat-shell-icons.ts'
 import { dispatchSidebarOpen } from '../../utils/chat-shell-sidebar.ts'
 import {
   headerActionsStyle,
   headerLeadingStyle,
   headerSidebarOpenStyle,
+  headerTrailingPillStyle,
   mainHeaderStyle,
   modelNameStyle,
   modelSelectorStyle,
@@ -26,8 +30,12 @@ export type ShellMainHeaderProps = {
   knowledgeName?: string | null
   /** Interactive model picker for the chat surface. */
   modelControl?: RemixNode
-  /** Chat-surface frosted glass chrome; library/content headers stay flat. */
+  /** Shared shell glass overlay (chat + AppShell content). Model picker stays chat-only. */
   glassChrome?: boolean
+  /** Serializable trailing action (clientEntry-safe). Profile Edit, etc. */
+  trailingActionHref?: string | null
+  trailingActionLabel?: string | null
+  trailingActionIcon?: ShellLucideIconKey | null
 }
 
 export function ShellMainHeader(handle: Handle<ShellMainHeaderProps>) {
@@ -37,9 +45,21 @@ export function ShellMainHeader(handle: Handle<ShellMainHeaderProps>) {
       knowledgeName = null,
       modelControl = null,
       glassChrome = false,
+      trailingActionHref = null,
+      trailingActionLabel = null,
+      trailingActionIcon = null,
     } = handle.props
     let title = knowledgeName?.trim() || SHELL_COPY.modelName
     let glass = glassChrome ? 'true' : undefined
+    let trailingHref = trailingActionHref?.trim() || ''
+    let trailingLabel = trailingActionLabel?.trim() || ''
+    let trailingIconKey = trailingActionIcon
+    let trailingIcon =
+      trailingIconKey && trailingIconKey in SHELL_LUCIDE_ICON
+        ? SHELL_LUCIDE_ICON[trailingIconKey]
+        : null
+    let showTrailing =
+      authenticated && trailingHref.length > 0 && trailingLabel.length > 0
 
     return (
       <header mix={mainHeaderStyle} data-glass={glass}>
@@ -83,6 +103,15 @@ export function ShellMainHeader(handle: Handle<ShellMainHeaderProps>) {
             </a>
             <a href={routes.register.index.href()} mix={secondaryPillStyle}>
               {SHELL_COPY.signUp}
+            </a>
+          </div>
+        ) : showTrailing ? (
+          <div mix={headerActionsStyle}>
+            <a href={trailingHref} mix={headerTrailingPillStyle}>
+              {trailingIcon ? (
+                <LucideIcon icon={trailingIcon} size={14} strokeWidth={2} />
+              ) : null}
+              {trailingLabel}
             </a>
           </div>
         ) : null}

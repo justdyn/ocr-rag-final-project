@@ -16,6 +16,12 @@ tmp/
 # scripts
 scripts
 
+# test-results-on-local-dev
+e2e
+playwright-report
+test-results
+playwright.config.ts
+
 # system
 .DS_Store
 

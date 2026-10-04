@@ -72,10 +72,14 @@ class Settings(BaseModel):
     # With the flag off, /api/memory routes are not mounted (404).
     user_memory_enabled: bool = Field(default=False)
 
+    # Admin bootstrap: if set and matches a user email, that user becomes admin (idempotent).
+    admin_bootstrap_email: str | None = Field(default=None)
+
     def ensure_data_dirs(self) -> None:
         """Create local data directories if missing (dev-friendly)."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.upload_dir.mkdir(parents=True, exist_ok=True)
+        (self.upload_dir / "avatars").mkdir(parents=True, exist_ok=True)
         self.chroma_persist_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -129,6 +133,7 @@ def get_settings() -> Settings:
         llm_timeout_seconds=float(os.getenv("LLM_TIMEOUT_SECONDS", "120")),
         chat_retrieval_k=int(os.getenv("CHAT_RETRIEVAL_K", "5")),
         user_memory_enabled=_env_bool("USER_MEMORY_ENABLED", False),
+        admin_bootstrap_email=(os.getenv("ADMIN_BOOTSTRAP_EMAIL") or "").strip() or None,
     )
     settings.ensure_data_dirs()
     return settings

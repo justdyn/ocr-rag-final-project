@@ -7,12 +7,17 @@ import { uploadFormData } from './middleware/form-data.ts'
 import controller from './actions/controller.tsx'
 import chatController from './actions/chat/controller.tsx'
 import filesController from './actions/files/controller.tsx'
+import helpController from './actions/help/controller.tsx'
 import libraryController from './actions/library/controller.tsx'
 import knowledgeController from './actions/knowledge/controller.tsx'
 import knowledgeChatStreamController from './actions/knowledge/chat-stream/controller.tsx'
 import loginController from './actions/login/controller.tsx'
+import llmConfigController from './actions/settings/admin/llm-config-controller.tsx'
 import modelsController from './actions/models/controller.tsx'
+import profileController from './actions/profile/controller.tsx'
 import registerController from './actions/register/controller.tsx'
+import settingsAccountController from './actions/settings/account-controller.tsx'
+import settingsPasswordController from './actions/settings/password-controller.tsx'
 import spjController from './actions/spj/controller.tsx'
 import { render } from './middleware/render.tsx'
 import { sessionCookie, sessionStorage } from './middleware/session.ts'
@@ -51,3 +56,8 @@ router.map(routes.library, libraryController)
 router.map(routes.knowledge, knowledgeController)
 router.map(routes.knowledge.chatStream, knowledgeChatStreamController)
 router.map(routes.spj, spjController)
+router.map(routes.profile, profileController)
+router.map(routes.help, helpController)
+router.map(routes.settings.account, settingsAccountController)
+router.map(routes.settings.password, settingsPasswordController)
+router.map(routes.settings.admin.llmConfig, llmConfigController)

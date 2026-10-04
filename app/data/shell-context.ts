@@ -31,6 +31,9 @@ export type ChatShellServerContext = {
   /** From GET /api/auth/me — sidebar account avatar + label. */
   userName: string
   userEmail: string
+  userRole: string
+  /** From GET /api/auth/me — profile avatar for sidebar account chip. */
+  userProfileImageUrl: string | null
   /** preferredConversationId was set but missing/not owned → controller returns 404. */
   conversationNotFound: boolean
 }
@@ -109,11 +112,15 @@ export async function loadChatShellServerContext(
   let conversations: ConversationSummary[] = []
   let userName = ''
   let userEmail = ''
+  let userRole = ''
+  let userProfileImageUrl: string | null = null
 
   let me = await fetchCurrentUser(accessToken)
   if (me.ok) {
     userName = me.data.name
     userEmail = me.data.email
+    userRole = me.data.role
+    userProfileImageUrl = me.data.profile_image_url
   }
 
   if (activeKnowledgeId) {
@@ -135,6 +142,8 @@ export async function loadChatShellServerContext(
     initialMessages: conversationMissing ? [] : initialMessages,
     userName,
     userEmail,
+    userRole,
+    userProfileImageUrl,
     conversationNotFound: conversationMissing,
   }
 }

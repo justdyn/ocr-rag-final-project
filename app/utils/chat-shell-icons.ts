@@ -5,10 +5,12 @@ import {
   CircleHelp,
   Ellipsis,
   FileText,
+  Key,
   Library,
   LogOut,
   PanelLeft,
   PanelLeftClose,
+  Pencil,
   Plus,
   Search,
   Settings,
@@ -16,6 +18,7 @@ import {
   SquarePen,
   User,
   X,
+  X as Close,
 } from 'lucide'
 
 import type { IconNode } from 'lucide'
@@ -37,8 +40,12 @@ export const SHELL_LUCIDE_ICON = {
   send: ArrowUp,
   file: FileText,
   remove: X,
+  close: Close,
+  sparkles: Sparkles,
   search: Search,
   more: Ellipsis,
+  edit: Pencil,
+  key: Key,
 } as const satisfies Record<string, IconNode>
 
 export type ShellLucideIconKey = keyof typeof SHELL_LUCIDE_ICON

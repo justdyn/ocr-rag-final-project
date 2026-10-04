@@ -6,6 +6,8 @@
 import { animate } from 'framer-motion/dom'
 import { animateEntrance, spring } from 'remix/ui/animation'
 
+export { animate }
+
 export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined') return false
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -215,6 +217,16 @@ export function animateMenuFade(el: HTMLElement, open: boolean): void {
   animate(el, { opacity: 0 }, { duration: 0.12 }).then(() => {
     el.hidden = true
   })
+}
+
+/**
+ * Button pending spinner — rotates a spinner element while a form submits.
+ * Reduced motion: leaves spinner static (no loop). Returns { stop(): void } for cleanup.
+ */
+export function animateButtonPending(spinner: HTMLElement): { stop(): void } {
+  if (prefersReducedMotion()) return { stop: () => {} }
+  let controls = animate(spinner, { rotate: [0, 360] }, { duration: 1, repeat: Infinity, ease: 'linear' })
+  return controls
 }
 
 /** @deprecated Prefer animateExpandCollapse — kept as the §5.2 preset name alias. */

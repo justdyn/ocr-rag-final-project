@@ -63,3 +63,16 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def require_admin(current_user: CurrentUser) -> User:
+    """Dependency that returns the user if admin, else 404 (not 403).
+
+    Using 404 avoids leaking existence of admin endpoints to non-admins.
+    """
+    if current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    return current_user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]

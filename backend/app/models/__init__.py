@@ -7,6 +7,7 @@ from app.models.file import File
 from app.models.knowledge import Knowledge, KnowledgeFile
 from app.models.message import Message
 from app.models.user import User
+from app.models.llm_config import LlmConfig
 from app.models.spj_draft import SpjDraft
 from app.models.user_memory import UserMemory
 
@@ -17,6 +18,7 @@ __all__ = [
     "File",
     "Knowledge",
     "KnowledgeFile",
+    "LlmConfig",
     "Message",
     "SpjDraft",
     "User",

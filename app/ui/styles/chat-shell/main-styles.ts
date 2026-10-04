@@ -34,9 +34,9 @@ export const mainHeaderStyle = css({
   zIndex: 2,
   background: 'var(--home-bg)',
   gap: '8px',
-  // Chat-only overlay (glassChrome): the bar leaves document flow so the
-  // scroller runs full-height beneath it and thread text stays visible as it
-  // passes under the chips. Library headers (no data-glass) stay in-flow.
+  // Shared shell overlay (glassChrome): the bar leaves document flow so the
+  // scroller runs full-height beneath it and content stays visible as it
+  // passes under the chips. Non-glass headers stay in-flow.
   '&[data-glass="true"]': {
     position: 'absolute',
     top: 0,
@@ -56,11 +56,10 @@ export const headerLeadingStyle = css({
 })
 
 /**
- * Chat-only header chip (data-glass="true") — solid page-color material:
+ * Shared shell header chip (data-glass="true") — solid page-color material:
  * opaque --home-bg fill, no hairline/ring/highlight/shadow. Hover and focus
  * are pinned to the same fill so the chip never flips material over the
- * transparent overlay bar; the base flat hover still serves non-glass
- * (Library) chips.
+ * transparent overlay bar; the base flat hover still serves non-glass chips.
  */
 const glassChipSolid = {
   background: 'var(--home-bg)',
@@ -514,7 +513,10 @@ export const shellAlertStyle = css({
   lineHeight: '20px',
 })
 
-/** Full-bleed scroller for DocIntel content routes (same edge-scrollbar rule). */
+/**
+ * Full-bleed scroller for AppShell content routes (same edge-scrollbar rule).
+ * paddingTop clears the absolute glass header (52px) — same inset as chatScrollRegionStyle.
+ */
 export const mainContentWideStyle = css({
   display: 'flex',
   flexDirection: 'column',
@@ -522,11 +524,46 @@ export const mainContentWideStyle = css({
   minHeight: 0,
   width: '100%',
   overflowY: 'auto',
-  padding: '16px 15px 32px',
+  padding: '52px 15px 32px',
 })
 
 export const contentPanelStyle = css({
   width: '100%',
   maxWidth: '960px',
   margin: '0 auto',
+})
+
+/** Profile view: fill scroller under glass inset and center children. */
+export const contentPanelCenterStyle = css({
+  flex: '1 1 auto',
+  minHeight: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+})
+
+/** Authenticated header trailing pill (e.g. Profile Edit). */
+export const headerTrailingPillStyle = css({
+  appearance: 'none',
+  margin: 0,
+  minHeight: '36px',
+  padding: '8px 12px',
+  borderRadius: '9999px',
+  border: '1px solid var(--home-border-strong)',
+  background: 'var(--home-bg)',
+  color: 'var(--home-fg)',
+  font: 'inherit',
+  fontSize: '14px',
+  fontWeight: 500,
+  lineHeight: '20px',
+  cursor: 'pointer',
+  textDecoration: 'none',
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  transition: 'opacity 150ms var(--home-ease-out), transform 120ms var(--home-ease-out)',
+  '&:hover, &:focus-visible': { opacity: 0.88, outline: 'none' },
+  '&:focus-visible': { outline: '2px solid var(--home-fg)', outlineOffset: '2px' },
+  '&:active': { transform: 'scale(0.98)' },
 })

@@ -1,4 +1,4 @@
-import { del, form, get, patch, post, route } from 'remix/routes'
+import { del, form, get, patch, post, put, route } from 'remix/routes'
 
 export const routes = route({
   assets: get('/assets/*path'),
@@ -18,6 +18,30 @@ export const routes = route({
   // Owner file browser (hybrid Library) — RAG still chat-KB-scoped.
   library: route({
     index: get('/library'),
+  }),
+  // Profile page (Phase B) — GET page, POST name, POST password change, avatar.
+  profile: route({
+    index: get('/profile'),
+    edit: get('/profile/edit'),
+    updateName: post('/profile'),
+    updatePassword: post('/profile/password'),
+    avatar: get('/profile/avatar'),
+    uploadAvatar: post('/profile/avatar'),
+  }),
+  // Help page (Phase B) — static FAQ.
+  help: route({
+    index: get('/help'),
+  }),
+  // Settings/admin JSON proxies (Phase B) — never hydrate plaintext keys.
+  settings: route('settings', {
+    account: route({ post: post('/account') }),
+    password: route({ post: post('/password') }),
+    admin: route('admin', {
+      llmConfig: route({
+        get: get('/llm-config'),
+        put: put('/llm-config'),
+      }),
+    }),
   }),
   // Upload/status/list BFF; GET index redirects to Library.
   files: route('files', {

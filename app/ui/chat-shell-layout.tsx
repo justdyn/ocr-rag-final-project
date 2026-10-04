@@ -15,6 +15,8 @@ export type ChatShellLayoutProps = {
   conversations?: ConversationSummary[]
   userName?: string
   userEmail?: string
+  userRole?: string
+  userProfileImageUrl?: string | null
   /** Main column — chat panel or DocIntel content wrapper. */
   children?: RemixNode
 }
@@ -29,6 +31,8 @@ export function ChatShellLayout(handle: Handle<ChatShellLayoutProps>) {
       conversations = [],
       userName = '',
       userEmail = '',
+      userRole = '',
+      userProfileImageUrl = null,
       children,
     } = handle.props
 
@@ -42,6 +46,8 @@ export function ChatShellLayout(handle: Handle<ChatShellLayoutProps>) {
           conversations={conversations}
           userName={userName}
           userEmail={userEmail}
+          userRole={userRole}
+          userProfileImageUrl={userProfileImageUrl}
         />
         {children}
       </div>

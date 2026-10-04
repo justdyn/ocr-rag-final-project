@@ -34,6 +34,7 @@ from app.schemas.query import QueryChunkResult
 from app.services.llm.base import LLMConfigError, LLMProvider, LLMProviderError
 from app.services.llm.openai_compatible import get_llm_provider
 from app.services.llm.prompt import build_rag_messages
+from app.services.llm_config import resolve_llm_settings
 from app.services.memory import (
     retrieve_relevant_memories,
     run_memory_extract,
@@ -220,7 +221,8 @@ async def prepare_chat(
     body starts when the key is missing.
     """
     settings = get_settings()
-    if not (settings.llm_api_key or "").strip():
+    resolved = await resolve_llm_settings(db)
+    if not (resolved.api_key or "").strip():
         raise ChatServiceError(
             "llm_not_configured",
             "LLM_API_KEY is not configured. Set it in the environment "
@@ -253,15 +255,15 @@ async def prepare_chat(
         query=query,
         llm_model=model,
     )
-    # request model → conversation.llm_model → settings.llm_model
-    resolved_model = model or convo.llm_model or settings.llm_model
+    # request model → conversation.llm_model → resolved.model
+    resolved_model = model or convo.llm_model or resolved.model
     if convo.llm_model is None:
         convo.llm_model = resolved_model
 
     if provider_factory is not None:
         provider = provider_factory()
     else:
-        provider = get_llm_provider(model=resolved_model)
+        provider = get_llm_provider(model=resolved_model, settings=resolved)
     require = getattr(provider, "require_configured", None)
     if callable(require):
         try:

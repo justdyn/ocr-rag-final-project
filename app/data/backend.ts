@@ -44,10 +44,13 @@ export async function backendFetch(
     headers.set('Authorization', `Bearer ${options.accessToken}`)
   }
 
-  return fetch(url, {
+  console.log('[backendFetch] url:', url, 'method:', options.method ?? (options.body !== undefined ? 'POST' : 'GET'))
+  let response = await fetch(url, {
     method: options.method ?? (options.body !== undefined ? 'POST' : 'GET'),
     headers,
     body,
     signal: options.signal,
   })
+  console.log('[backendFetch] response.status:', response.status, 'response.ok:', response.ok)
+  return response
 }

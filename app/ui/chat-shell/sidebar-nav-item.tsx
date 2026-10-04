@@ -34,7 +34,7 @@ export function SidebarNavItem(handle: Handle<ShellNavItem>) {
             : undefined,
         ]}
       >
-        <LucideIcon icon={icon} strokeWidth={1.75} />
+        <LucideIcon icon={icon} size={18} strokeWidth={2} />
         <span data-sidebar-label="" mix={sidebarItemLabelStyle}>
           {label}
         </span>

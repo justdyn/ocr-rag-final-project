@@ -146,6 +146,7 @@ describe('loadChatShellServerContext', () => {
     assert.equal(shell.conversationNotFound, false)
     assert.equal(shell.userName, 'Oh Hyundo')
     assert.equal(shell.userEmail, 'oh@example.com')
+    assert.equal(shell.userRole, 'user')
     assert.equal(
       requested.some((row) => row.endsWith('/api/knowledge')),
       false,
@@ -171,6 +172,7 @@ describe('loadChatShellServerContext', () => {
     assert.equal(shell.activeConversationId, null)
     assert.deepEqual(shell.initialMessages, [])
     assert.equal(shell.conversationNotFound, false)
+    assert.equal(shell.userRole, 'user')
     assert.equal(
       requested.some((row) => row.includes('/api/knowledge/')),
       false,
@@ -192,6 +194,7 @@ describe('loadChatShellServerContext', () => {
     assert.equal(shell.activeConversationId, LEGACY_CONVERSATION.id)
     assert.equal(shell.initialMessages.length, 1)
     assert.equal(shell.conversationNotFound, false)
+    assert.equal(shell.userRole, 'user')
     assert.equal(
       requested.some((row) =>
         row.endsWith(`/api/conversations/${LEGACY_CONVERSATION.id}`),
@@ -218,6 +221,7 @@ describe('loadChatShellServerContext', () => {
     assert.equal(shell.activeConversationId, null)
     assert.deepEqual(shell.initialMessages, [])
     assert.equal(shell.chatKnowledgeId, null)
+    assert.equal(shell.userRole, 'user')
   })
 
   it('ignores a preferred knowledge id that does not resolve', async () => {
@@ -232,6 +236,7 @@ describe('loadChatShellServerContext', () => {
     assert.equal(shell.chatKnowledgeId, null)
     assert.deepEqual(shell.conversations, [])
     assert.equal(shell.conversationNotFound, false)
+    assert.equal(shell.userRole, 'user')
     assert.equal(
       requested.some((row) => row.includes('/api/conversations/last')),
       false,

@@ -126,7 +126,7 @@ describe('chat shell — viewport-bound layout contract', () => {
     view.cleanup()
   })
 
-  it('glass header overlays the thread as a transparent bar (chat-only)', () => {
+  it('glass header overlays content as a transparent bar (shared shell)', () => {
     let view = render(<header mix={mainHeaderStyle} data-glass="true" />)
     let header = view.$('header')
     assert.ok(header, 'header element exists')
@@ -394,6 +394,11 @@ describe('chat shell — viewport-bound layout contract', () => {
     let rule = ruleFor(view.$('main'))
     assert.match(rule, /overflow-y:\s*auto/, `wide content owns vertical scroll, got: ${rule}`)
     assert.match(rule, /min-height:\s*0/, `wide content may shrink below content, got: ${rule}`)
+    assert.match(
+      rule,
+      /padding(?:-top)?:\s*52px/,
+      `wide content clears absolute glass header (52px top), got: ${rule}`,
+    )
     assert.doesNotMatch(
       rule,
       /max-width:\s*960px/,
