@@ -32,7 +32,7 @@
     "@types/unist": "^3.0.3",
     "concurrently": "^9.2.0",
     "linkedom": "^0.18.13",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "latest"
   }
 }
