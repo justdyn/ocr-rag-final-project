@@ -25,10 +25,6 @@ playwright.config.ts
 # system
 .DS_Store
 
-# version-manager
-.nvmrc
-.python-version
-
 # skills
 skills-lock.json
 
