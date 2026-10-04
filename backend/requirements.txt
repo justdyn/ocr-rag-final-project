@@ -33,7 +33,7 @@ pypdfium2==5.7.0
 python-jose[cryptography]==3.5.0
 passlib[bcrypt]==1.7.4
 # passlib 1.7.4 is incompatible with bcrypt>=4.1 (version probe / 72-byte truncate bugs)
-bcrypt==4.0.1
+bcrypt==5.0.0
 # Required by pydantic EmailStr on register/login bodies
 email-validator==2.3.0
 
