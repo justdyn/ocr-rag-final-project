@@ -30,7 +30,7 @@
     "@types/mdast": "^4.0.4",
     "@types/node": "latest",
     "@types/unist": "^3.0.3",
-    "concurrently": "^9.2.0",
+    "concurrently": "^10.0.5",
     "linkedom": "^0.18.13",
     "tailwindcss": "^4.3.0",
     "typescript": "latest"
