@@ -1,0 +1,54 @@
+# Backend CI — pytest + script-only test files (FastAPI)
+# Pattern: Open WebUI backend.yaml (path filter, concurrency); tests instead of Ruff-only
+
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  pull_request:
+    branches: [main]
+    paths: ['backend/**', '.github/workflows/backend.yml']
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Pytest & Scripts
+    runs-on: ubuntu-latest
+    # ponytail: sentence-transformers/chroma make first install slow; cache pip when it hurts
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: '.python-version'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Pytest
+        run: python -m pytest tests/ -q
+
+      - name: Script-only tests
+        run: |
+          set -e
+          python tests/test_account_surfaces_phase_a.py
+          python tests/test_chat_model_selection.py
+          python tests/test_files_list.py
+          python tests/test_get_conversation.py
+          python tests/test_last_conversation_scope.py
+          python tests/test_models_catalog.py
+          python tests/test_title_stream_sse.py

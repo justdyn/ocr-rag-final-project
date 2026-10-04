@@ -1,0 +1,58 @@
+name: Bug report
+description: Something broken in DocIntel
+title: 'bug: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report a defect. Prefer repro steps that fail locally (`npm test` / pytest).
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What broke?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps
+      placeholder: |
+        1. …
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Frontend (Remix BFF / app)
+        - Backend (FastAPI)
+        - Both / unclear
+        - CI / tooling
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: Node (`.nvmrc`), Python (`.python-version`), OS
+      placeholder: Node 24 / Python 3.12.9 / Windows
+    validations:
+      required: false

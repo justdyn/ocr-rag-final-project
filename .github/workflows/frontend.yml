@@ -1,0 +1,41 @@
+# Frontend CI — typecheck + unit tests (Remix BFF)
+# Pattern: Open WebUI frontend.yaml (path-ignore, concurrency) + Remix check-pr (typecheck/test)
+
+name: Frontend CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['backend/**']
+  pull_request:
+    branches: [main]
+    paths-ignore: ['backend/**']
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Typecheck & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CSS
+        run: npm run build:css
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
