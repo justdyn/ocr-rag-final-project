@@ -344,6 +344,9 @@
   .max-w-prose {
     max-width: 65ch;
   }
+  .flex-shrink {
+    flex-shrink: 1;
+  }
   .shrink {
     flex-shrink: 1;
   }

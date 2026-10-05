@@ -8,6 +8,7 @@ import {
   Key,
   Library,
   LogOut,
+  MessageCircle,
   PanelLeft,
   PanelLeftClose,
   Pencil,
@@ -46,6 +47,7 @@ export const SHELL_LUCIDE_ICON = {
   more: Ellipsis,
   edit: Pencil,
   key: Key,
+  chatBubble: MessageCircle,
 } as const satisfies Record<string, IconNode>
 
 export type ShellLucideIconKey = keyof typeof SHELL_LUCIDE_ICON

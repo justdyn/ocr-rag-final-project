@@ -1,12 +1,12 @@
 import { css } from 'remix/ui'
 
 import {
+  SIDEBAR_ASIDE_TRANSITION,
   SIDEBAR_COLLAPSED_WIDTH_PX,
   SIDEBAR_DESKTOP_MIN_PX,
   SIDEBAR_LABEL_TRANSITION,
   SIDEBAR_MOBILE_MAX_PX,
   SIDEBAR_TRACK_TRANSITION,
-  SIDEBAR_TRANSITION,
   SIDEBAR_WIDTH_PX,
 } from '../../../utils/chat-shell-sidebar.ts'
 
@@ -62,8 +62,9 @@ export const sidebarStyle = css({
   borderRight: '1px solid var(--home-border)',
   transform: 'translateX(0)',
   opacity: 1,
-  transition: SIDEBAR_TRANSITION,
-  willChange: 'width, transform, opacity',
+  // Width snaps with data-open; track owns the rail width tween (anti-squash on expand).
+  transition: SIDEBAR_ASIDE_TRANSITION,
+  willChange: 'transform, opacity',
   '&[data-open="false"]': {
     width: `${SIDEBAR_COLLAPSED_WIDTH_PX}px`,
     '& [data-sidebar-item] [data-sidebar-label]': {
@@ -109,11 +110,35 @@ export const sidebarHeaderStyle = css({
   height: '52px',
   padding: '8px',
   flexShrink: 0,
+  // Collapsed: let Search+Toggle column grow past fixed 52px
+  '&[data-collapsed="true"]': {
+    height: 'auto',
+    minHeight: '52px',
+    justifyContent: 'center',
+    padding: '8px 6px',
+  },
 })
 
 export const sidebarHeaderCollapsedStyle = css({
   justifyContent: 'center',
   padding: '8px 6px',
+})
+
+/**
+ * Search + open/close cluster.
+ * DOM order is always Toggle then Search (stable — no array swap).
+ * Open: row-reverse → visual Search | Toggle. Collapsed: column → Toggle above Search.
+ */
+export const sidebarHeaderActionsStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '2px',
+  flexShrink: 0,
+  flexDirection: 'row-reverse',
+  '&[data-collapsed="true"]': {
+    flexDirection: 'column',
+    gap: '4px',
+  },
 })
 
 export const iconButtonStyle = css({
@@ -123,6 +148,9 @@ export const iconButtonStyle = css({
   padding: 0,
   width: '36px',
   height: '36px',
+  minWidth: '36px',
+  minHeight: '36px',
+  flexShrink: 0,
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -787,4 +815,143 @@ export const settingsModalButtonStyle = css({
   '&:hover:not(:disabled), &:focus-visible:not(:disabled)': { background: 'var(--home-subtle)', outline: 'none' },
   '&:active:not(:disabled)': { transform: 'scale(0.98)' },
   '&:disabled': { opacity: 0.5, cursor: 'not-allowed' },
+})
+
+/* Conversation search modal — §3.5 Conversation search (Figma 7:977); grayscale shell skin. */
+export const conversationSearchOverlayStyle = css({
+  position: 'fixed',
+  inset: 0,
+  zIndex: 100,
+  background: 'rgba(13, 13, 13, 0.32)',
+  backdropFilter: 'blur(2px)',
+  WebkitBackdropFilter: 'blur(2px)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '24px',
+  opacity: 0,
+  pointerEvents: 'none',
+  transition: 'opacity 200ms var(--home-ease-out)',
+  '@media (prefers-reduced-transparency: reduce)': {
+    background: 'rgba(13, 13, 13, 0.48)',
+    backdropFilter: 'none',
+    WebkitBackdropFilter: 'none',
+  },
+  // Scope 3b mobile: inset card — keep margins so dimmed backdrop shows
+  '@media (max-width: 900px)': { padding: '16px' },
+  '&[data-open="true"]': {
+    opacity: 1,
+    pointerEvents: 'auto',
+  },
+})
+
+export const conversationSearchStyle = css({
+  position: 'relative',
+  width: '100%',
+  maxWidth: '560px',
+  maxHeight: '85vh',
+  background: 'var(--home-bg)',
+  border: '1px solid var(--home-border)',
+  borderRadius: '24px',
+  boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.18)',
+  display: 'flex',
+  flexDirection: 'column',
+  overflow: 'hidden',
+  // Soft edge highlight
+  '&::before': {
+    content: '""',
+    position: 'absolute',
+    inset: 0,
+    borderRadius: '24px',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    pointerEvents: 'none',
+  },
+  '@media (prefers-reduced-transparency: reduce)': {
+    background: 'var(--home-bg)',
+    '&::before': { display: 'none' },
+  },
+  // Scope 3b mobile: inset centered card (not full-bleed)
+  '@media (max-width: 900px)': {
+    maxWidth: '100%',
+    maxHeight: 'min(85vh, calc(100% - 32px))',
+    height: 'auto',
+    borderRadius: '20px',
+    '&::before': { borderRadius: '20px' },
+  },
+})
+
+export const conversationSearchHeaderStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '16px 16px 8px',
+})
+
+/** Seamless Search… field — transparent, no Settings pill chrome. */
+export const conversationSearchFieldStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  flex: '1 1 auto',
+  minWidth: 0,
+  padding: '4px 8px',
+  border: 0,
+  background: 'transparent',
+  color: 'var(--home-muted)',
+})
+
+export const conversationSearchInputStyle = css({
+  appearance: 'none',
+  border: 0,
+  outline: 'none',
+  flex: '1 1 auto',
+  minWidth: 0,
+  background: 'transparent',
+  color: 'var(--home-fg)',
+  font: 'inherit',
+  fontSize: '16px',
+  lineHeight: '24px',
+  '&::placeholder': { color: 'var(--home-muted)' },
+})
+
+export const conversationSearchListStyle = css({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '2px',
+  padding: '4px 12px 16px',
+  overflowY: 'auto',
+  minHeight: 0,
+})
+
+export const conversationSearchSectionLabelStyle = css({
+  margin: 0,
+  padding: '4px 10px 6px',
+  fontSize: '12px',
+  lineHeight: '16px',
+  fontWeight: 600,
+  color: 'var(--home-muted)',
+})
+
+export const conversationSearchItemStyle = css({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  minHeight: '48px',
+  padding: '10px 12px',
+  borderRadius: '10px',
+  color: 'var(--home-fg)',
+  textDecoration: 'none',
+  fontSize: '14px',
+  lineHeight: '20px',
+  transition: 'background-color 150ms var(--home-ease-out)',
+  '&:hover, &:focus-visible': { background: 'var(--home-surface)', outline: 'none' },
+})
+
+export const conversationSearchItemLabelStyle = css({
+  flex: '1 1 auto',
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+  color: 'var(--home-fg)',
 })

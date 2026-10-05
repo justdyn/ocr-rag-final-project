@@ -7,6 +7,8 @@ export const SIDEBAR_MOBILE_QUERY = `(max-width: ${SIDEBAR_MOBILE_MAX_PX}px)`
 export const SIDEBAR_ANIM_MS = 320
 export const SIDEBAR_EASE = 'var(--home-ease-out)'
 export const SIDEBAR_TRANSITION = `width ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}, transform ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}, opacity ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}`
+/** Aside: no width tween — snaps with data-open so header row never sits in a mid-anim narrow box. */
+export const SIDEBAR_ASIDE_TRANSITION = `transform ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}, opacity ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}`
 export const SIDEBAR_TRACK_TRANSITION = `max-width ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}, width ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}`
 export const SIDEBAR_LABEL_TRANSITION = `opacity ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}, max-width ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}`
 

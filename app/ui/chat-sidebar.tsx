@@ -28,6 +28,7 @@ import {
   sidebarBackdropStyle,
   sidebarConversationsStyle,
   sidebarFooterNavStyle,
+  sidebarHeaderActionsStyle,
   sidebarHeaderCollapsedStyle,
   sidebarHeaderStyle,
   sidebarHomeLinkStyle,
@@ -55,6 +56,7 @@ import {
   accountWrapStyle,
 } from './chat-shell/sidebar-account.tsx'
 import { SettingsModal } from './settings-modal.tsx'
+import { ConversationSearchModal } from './conversation-search-modal.tsx'
 import { SidebarCta } from './chat-shell/sidebar-cta.tsx'
 import { SidebarNavItem } from './chat-shell/sidebar-nav-item.tsx'
 
@@ -111,6 +113,7 @@ export const ChatSidebar = clientEntry(
       )
     let accountMenuOpen = false
     let settingsModalOpen = false
+    let searchModalOpen = false
     let accountMenuEl: HTMLElement | null = null
     let accountRootEl: HTMLElement | null = null
     // Setup-scope copies of SSR props so client-created chats can appear without reload.
@@ -149,6 +152,11 @@ export const ChatSidebar = clientEntry(
       } else {
         document.body.style.overflow = ''
       }
+    }
+
+    function setSearchModalOpen(next: boolean) {
+      searchModalOpen = next
+      handle.update()
     }
 
     // Optimistic rename commit (Enter/blur). Cancel = exit only; revert restores the
@@ -231,6 +239,11 @@ export const ChatSidebar = clientEntry(
         if (editingId !== null) {
           editingId = null
           handle.update()
+          return
+        }
+        // Search modal owns Esc before settings/account/sidebar
+        if (searchModalOpen) {
+          setSearchModalOpen(false)
           return
         }
         // Settings modal owns Esc before account menu / sidebar
@@ -319,6 +332,54 @@ export const ChatSidebar = clientEntry(
       let displayName = accountDisplayName(userName, userEmail)
       let initials = accountInitials(userName, userEmail)
       let compact = !isOpen
+      let searchCanOpen = authenticated && conversations.length > 0
+      let searchButton = (
+        <button
+          key="search"
+          type="button"
+          aria-label={SHELL_COPY.conversationSearchLabel}
+          aria-hidden={searchCanOpen ? 'false' : 'true'}
+          tabIndex={searchCanOpen ? 0 : -1}
+          mix={[
+            iconButtonStyle,
+            on('click', () => {
+              if (!searchCanOpen) return
+              setSearchModalOpen(true)
+            }),
+          ]}
+        >
+          <LucideIcon
+            key="hdr-search"
+            icon={SHELL_LUCIDE_ICON.search}
+            size={20}
+            strokeWidth={1.75}
+          />
+        </button>
+      )
+      let toggleButton = (
+        <button
+          key="toggle"
+          type="button"
+          aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
+          mix={[
+            iconButtonStyle,
+            on('click', () => {
+              isOpen = !isOpen
+              if (!isOpen) accountMenuOpen = false
+              handle.update()
+            }),
+          ]}
+        >
+          <LucideIcon
+            key={isOpen ? 'hdr-close' : 'hdr-open'}
+            icon={isOpen ? SHELL_LUCIDE_ICON.sidebarClose : SHELL_LUCIDE_ICON.sidebarOpen}
+            size={20}
+            strokeWidth={1.75}
+          />
+        </button>
+      )
+      // Stable DOM: Toggle then Search. Visual via CSS row-reverse (open) / column (collapsed).
+      let headerActions = [toggleButton, searchButton]
 
       return (
         <>
@@ -342,8 +403,11 @@ export const ChatSidebar = clientEntry(
               mix={sidebarStyle}
               aria-label="Chat navigation"
             >
-              <div mix={[sidebarHeaderStyle, isOpen ? undefined : sidebarHeaderCollapsedStyle]}>
-                {/* Always <a>+<button>: omitting Home when collapsed hydrates as `tag button a`. */}
+              <div
+                data-collapsed={isOpen ? 'false' : 'true'}
+                mix={[sidebarHeaderStyle, isOpen ? undefined : sidebarHeaderCollapsedStyle]}
+              >
+                {/* Always <a>+actions: omitting Home when collapsed hydrates as `tag button a`. */}
                 <a
                   key="home"
                   href={routes.home.href()}
@@ -355,25 +419,12 @@ export const ChatSidebar = clientEntry(
                 >
                   <BrandLogo src={SHELL_BRAND.remixLogo} size={24} alt="Remix" />
                 </a>
-                <button
-                  key="toggle"
-                  type="button"
-                  aria-label={isOpen ? 'Close sidebar' : 'Open sidebar'}
-                  mix={[
-                    iconButtonStyle,
-                    on('click', () => {
-                      isOpen = !isOpen
-                      if (!isOpen) accountMenuOpen = false
-                      handle.update()
-                    }),
-                  ]}
+                <div
+                  data-collapsed={isOpen ? 'false' : 'true'}
+                  mix={sidebarHeaderActionsStyle}
                 >
-                  <LucideIcon
-                    icon={isOpen ? SHELL_LUCIDE_ICON.sidebarClose : SHELL_LUCIDE_ICON.sidebarOpen}
-                    size={20}
-                    strokeWidth={1.75}
-                  />
-                </button>
+                  {headerActions}
+                </div>
               </div>
 
               <nav data-sidebar-nav="" mix={sidebarNavStyle}>
@@ -549,6 +600,12 @@ export const ChatSidebar = clientEntry(
               </div>
             </aside>
           </div>
+          {searchModalOpen && authenticated ? (
+            <ConversationSearchModal
+              conversations={conversations}
+              onClose={() => setSearchModalOpen(false)}
+            />
+          ) : null}
           {settingsModalOpen && authenticated ? (
             <SettingsModal
                     userRole={userRole as 'admin' | 'user'}
