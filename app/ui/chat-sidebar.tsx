@@ -447,6 +447,8 @@ export const ChatSidebar = clientEntry(
                   // Internal sidebar scroller opts out of the root Lenis hijack (§4.3).
                   data-lenis-prevent=""
                   aria-label={SHELL_COPY.conversations}
+                  data-collapsed={isOpen ? 'false' : 'true'}
+                  aria-hidden={isOpen ? 'false' : 'true'}
                 >
                   <p
                     data-collapsed={isOpen ? 'false' : 'true'}

@@ -48,6 +48,7 @@ let {
   sidebarHomeLinkStyle,
   sidebarStyle,
   iconButtonStyle,
+  sidebarConversationsStyle,
 } = await import('./styles/chat-shell/sidebar-styles.ts')
 
 function ruleFor(el: Element | null): string {
@@ -161,5 +162,25 @@ describe('sidebar header actions collapsed Search', () => {
     )
     assert.match(rule, /transition:/, 'aside still transitions transform/opacity')
     view.cleanup()
+  })
+
+  it('sidebarConversationsStyle hides nav when collapsed; visible when open', () => {
+    function OpenProbe(_handle: { props: Record<string, never> }) {
+      return () => <nav data-collapsed="false" mix={sidebarConversationsStyle} />
+    }
+    let openView = render(<OpenProbe />)
+    let openRule = ruleFor(openView.$('[data-collapsed="false"]'))
+    // Base rule (not the nested &[data-collapsed="true"]) should have display:flex, not none
+    assert.match(openRule, /display:\s*flex/, 'open conversations nav base rule has display:flex')
+    assert.doesNotMatch(openRule, /^@layer[^{]*display:\s*none/, 'open conversations nav must not have display:none at root level')
+    openView.cleanup()
+
+    function CollapsedProbe(_handle: { props: Record<string, never> }) {
+      return () => <nav data-collapsed="true" mix={sidebarConversationsStyle} />
+    }
+    let collapsedView = render(<CollapsedProbe />)
+    let collapsedRule = ruleFor(collapsedView.$('[data-collapsed="true"]'))
+    assert.match(collapsedRule, /&[^}]*\[data-collapsed=["']true["']\][^}]*display:\s*none/, 'collapsed conversations nav must have display:none when data-collapsed=true')
+    collapsedView.cleanup()
   })
 })

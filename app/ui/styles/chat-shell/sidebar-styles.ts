@@ -183,6 +183,7 @@ export const sidebarConversationsStyle = css({
   flex: '1 1 auto',
   minHeight: 0,
   overflowY: 'auto',
+  '&[data-collapsed="true"]': { display: 'none' },
 })
 
 export const sidebarSpacerStyle = css({ flex: '1 1 auto', minHeight: '24px' })
