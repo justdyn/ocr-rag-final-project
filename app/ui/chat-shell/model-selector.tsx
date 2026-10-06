@@ -120,10 +120,12 @@ export function ChatModelSelector(handle: Handle<ChatModelSelectorProps>) {
     }
   }
 
-  // Prefetch catalog in the browser only — SSR has no scheduleUpdate.
+  // Prefetch after hydrate — sync loadMore/update in setup → scheduleUpdate not implemented.
   if (typeof window !== 'undefined' && !hydrated) {
     hydrated = true
-    void loadMore()
+    handle.queueTask(() => {
+      void loadMore()
+    })
   }
 
   function setOpen(next: boolean) {
@@ -170,7 +172,7 @@ export function ChatModelSelector(handle: Handle<ChatModelSelectorProps>) {
     let label =
       selectedModelLabel.trim() ||
       defaultModel ||
-      (loading ? 'Loading…' : SHELL_COPY.modelSearchPlaceholder)
+      SHELL_COPY.modelSearchPlaceholder
 
     return (
       <div mix={modelSelectorWrapStyle} data-open={open ? 'true' : 'false'}>

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
 import {
+  chatModelFirstPaint,
   readPreferredChatModel,
   writePreferredChatModel,
 } from './chat-model-preference.ts'
@@ -32,6 +33,35 @@ function withSessionStorage(run: (store: Map<string, string>) => void) {
 }
 
 describe('chat-model-preference', () => {
+  it('chatModelFirstPaint uses props only (ignores sessionStorage)', () => {
+    withSessionStorage(() => {
+      writePreferredChatModel({ id: 'gpt-4o-mini', name: 'gpt-4o-mini' })
+      assert.deepEqual(chatModelFirstPaint(null), { id: null, label: '' })
+      assert.deepEqual(chatModelFirstPaint(undefined), { id: null, label: '' })
+      assert.deepEqual(chatModelFirstPaint('  '), { id: null, label: '' })
+      assert.deepEqual(chatModelFirstPaint('o4-mini'), {
+        id: 'o4-mini',
+        label: 'o4-mini',
+      })
+    })
+  })
+
+  it('readPreferredChatModel returns null without sessionStorage', () => {
+    let original = globalThis.sessionStorage
+    Object.defineProperty(globalThis, 'sessionStorage', {
+      configurable: true,
+      value: undefined,
+    })
+    try {
+      assert.equal(readPreferredChatModel(), null)
+    } finally {
+      Object.defineProperty(globalThis, 'sessionStorage', {
+        configurable: true,
+        value: original,
+      })
+    }
+  })
+
   it('round-trips id and display name', () => {
     withSessionStorage(() => {
       writePreferredChatModel({ id: 'gpt-4o-mini', name: 'GPT-4o mini' })

@@ -6,6 +6,15 @@ export type PreferredChatModel = { id: string; name: string }
 
 const STORAGE_KEY = 'docintel.chat.llm_model'
 
+/** SSR-safe first paint — props only; session preference applied post-hydrate. */
+export function chatModelFirstPaint(initialLlmModel?: string | null): {
+  id: string | null
+  label: string
+} {
+  let trimmed = initialLlmModel?.trim() || ''
+  return { id: trimmed || null, label: trimmed }
+}
+
 export function readPreferredChatModel(): PreferredChatModel | null {
   if (typeof sessionStorage === 'undefined') return null
   try {

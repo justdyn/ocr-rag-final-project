@@ -31,6 +31,7 @@ import {
 } from './styles/chat-shell/main-styles.ts'
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import {
+  chatModelFirstPaint,
   readPreferredChatModel,
   writePreferredChatModel,
 } from '../utils/chat-model-preference.ts'
@@ -80,11 +81,10 @@ export const ChatShellMainPanel = clientEntry(
     let knowledgeId: string | null = handle.props.activeKnowledgeId ?? null
     let knowledgeName: string | null = handle.props.activeKnowledgeName ?? null
     let conversationId: string | null = handle.props.initialConversationId ?? null
-    let preferred = readPreferredChatModel()
-    let selectedModelId: string | null =
-      handle.props.initialLlmModel?.trim() || preferred?.id || null
-    let selectedModelLabel: string =
-      handle.props.initialLlmModel?.trim() || preferred?.name || ''
+    // First paint: props only — sessionStorage preference diverges SSR vs client.
+    let firstPaint = chatModelFirstPaint(handle.props.initialLlmModel)
+    let selectedModelId: string | null = firstPaint.id
+    let selectedModelLabel: string = firstPaint.label
     let modelPickerOpen = false
     let messages: ChatMessage[] = cloneInitialMessages(handle.props.initialMessages ?? [])
     // Soft-nav reuses this clientEntry and only patches handle.props. Track the last
@@ -140,6 +140,16 @@ export const ChatShellMainPanel = clientEntry(
         window.removeEventListener(NEW_CHAT_EVENT, onNewChat)
       })
     }
+
+    // MSH-7: apply session preference after hydrate when thread has no model.
+    handle.queueTask(() => {
+      if (selectedModelId) return
+      let preferred = readPreferredChatModel()
+      if (!preferred) return
+      selectedModelId = preferred.id
+      selectedModelLabel = preferred.name
+      handle.update()
+    })
 
     function syncScrollFab(visible: boolean) {
       if (showScrollFab === visible) return
