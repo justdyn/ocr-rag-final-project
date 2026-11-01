@@ -4,7 +4,7 @@
 # Exact pins below are what resolved in this environment on 2026-08-21.
 
 # Web framework
-fastapi==0.136.3
+fastapi==0.162.0
 uvicorn[standard]==0.51.0
 pydantic==2.13.4
 python-multipart==0.0.32
