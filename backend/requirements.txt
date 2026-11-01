@@ -27,7 +27,7 @@ pypdf==6.7.5
 pytesseract==0.3.13
 Pillow==12.3.0
 # PDF page rasterization for OCR fallback (avoids system Poppler dependency)
-pypdfium2==5.7.0
+pypdfium2==5.14.0
 
 # Auth
 python-jose[cryptography]==3.5.0
