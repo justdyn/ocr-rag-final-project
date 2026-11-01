@@ -23,7 +23,7 @@ rank-bm25==0.2.2
 sentence-transformers==5.5.1
 
 # Document extraction / OCR (pip wrappers only — Tesseract binary is system-level)
-pypdf==6.7.5
+pypdf==6.21.4
 pytesseract==0.3.13
 Pillow==12.3.0
 # PDF page rasterization for OCR fallback (avoids system Poppler dependency)
