@@ -20,7 +20,7 @@ chromadb==1.5.9
 
 # Retrieval / embeddings (logic in a later step)
 rank-bm25==0.2.2
-sentence-transformers==5.5.1
+sentence-transformers==6.2.0
 
 # Document extraction / OCR (pip wrappers only — Tesseract binary is system-level)
 pypdf==6.7.5
