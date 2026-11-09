@@ -23,7 +23,7 @@ from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.core.database import AsyncSessionLocal
-from app.main import app
+from app.tensho import app
 from app.models.message import Message
 from app.services import chat as chat_service
 from app.services.llm.prompt import SYSTEM_PROMPT, build_rag_messages

@@ -8,16 +8,25 @@ from pathlib import Path
 from string import Template
 from typing import Any
 
-# ponytail: naive IDR regex — no comma-decimals, negatives or paren amounts;
-# tighten when real SPJ fixtures break it (e.g. accept "1.000,50").
-_AMOUNT = r"(?:Rp\s?)?(\d{1,3}(?:\.\d{3})+|\d+)"
+# ponytail: no negatives/paren amounts yet; IDR thousands "." + decimal "," supported.
+_AMOUNT = (
+    r"(?:Rp\s?)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:,\d{1,2})?)"
+)
 _TOTAL_LINE = re.compile(r"^(total|jumlah|grand total)\b", re.IGNORECASE)
 _QTY_X_PRICE = re.compile(r"^(\D*?)\s*(\d+)\s*[xX×]\s*" + _AMOUNT, re.IGNORECASE)
 _ANY_AMOUNT = re.compile(_AMOUNT)
 
 
-def _to_int(raw: str) -> int:
-    return int(raw.replace(".", ""))
+def _parse_idr_amount(raw: str) -> int:
+    """Parse Indonesian IDR token to whole rupiah (sen rounded)."""
+    s = raw.strip()
+    if "," in s:
+        whole, frac = s.rsplit(",", 1)
+        whole_digits = whole.replace(".", "")
+        frac = (frac + "00")[:2]
+        cents = int(whole_digits) * 100 + int(frac)
+        return (cents + 50) // 100
+    return int(s.replace(".", ""))
 
 
 def _line_confidence(qty_x_price: bool) -> float:
@@ -42,14 +51,14 @@ def extract_fields(
         match = _QTY_X_PRICE.match(stripped)
         if match:
             desc, qty_raw, price_raw = match.groups()
-            qty, unit_price = int(qty_raw), _to_int(price_raw)
+            qty, unit_price = int(qty_raw), _parse_idr_amount(price_raw)
             qty_x_price = True
         else:
             matches = list(_ANY_AMOUNT.finditer(stripped))
             if not matches:
                 continue  # no money on this line — not a line item
             last = matches[-1]
-            unit_price = _to_int(last.group(1))
+            unit_price = _parse_idr_amount(last.group(1))
             desc = re.sub(r"(?i)\s*Rp\s*$", "", stripped[: last.start()])
         desc = desc.strip(" \t:-–—") or stripped
         lines.append(
@@ -128,3 +137,25 @@ def render_accountability_stub(fields: dict[str, Any], document_total: int | Non
         rows=rows,
         document_total=document_total if document_total is not None else "-",
     )
+
+
+def extract_spby_header(text: str) -> dict:
+    # ponytail: next-line labels, widen the patterns when a real text-layer SPBY differs
+    import re
+    m_date = re.search(r"Tanggal\s*:\s*([0-9]+\s+[A-Za-z]+\s+[0-9]{4})", text)
+    date = m_date.group(1) if m_date else None
+    m_payee = re.search(r"Kepada\s*\n\s*([\w\s\.]+?)\n", text)
+    payee = m_payee.group(1).strip() if m_payee else None
+    m_uraian = re.search(r"Untuk Pembayaran\n(.+?)\nKegiatan", text, re.S)
+    uraian = m_uraian.group(1).strip() if m_uraian else None
+    m_mak = re.search(r"Kegiatan / Output/MAK\n([0-9A-Z\.]+)", text)
+    mak = m_mak.group(1).strip() if m_mak else None
+    nomor = None
+    for line in text.splitlines():
+        if line.startswith("Nomor"):
+            rest = line.split(":", 1)[1].strip()
+            nomor = rest if rest else None
+            break
+    m_amount = re.search(r"melakukan pembayaran sejumlah\s*([0-9]+)", text)
+    amount_idr = int(m_amount.group(1)) if m_amount else None
+    return {"date": date, "amount_idr": amount_idr, "uraian": uraian, "payee": payee, "mak": mak, "nomor": nomor}

@@ -8,7 +8,7 @@ import uuid
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.tensho import app
 from app.services.retrieval.bm25_cache import clear_all_bm25_cache
 
 # Ambiguous-term corpus: BM25 prefers animal/fruit sense (A); dense prefers tech/brand (B).

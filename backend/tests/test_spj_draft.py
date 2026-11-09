@@ -19,7 +19,7 @@ import app.models  # noqa: F401 — registers all tables on Base.metadata
 from app.core.config import get_settings
 from app.core.database import Base, get_db
 from app.dependencies.auth import get_current_user
-from app.main import create_app
+from app.tensho import create_app
 from app.models.file import File
 from app.models.knowledge import Knowledge, KnowledgeFile
 from app.models.user import User

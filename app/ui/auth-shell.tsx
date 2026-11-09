@@ -20,7 +20,7 @@ export function AuthShell(handle: Handle<AuthShellProps>) {
       <main className="flex min-h-screen items-center justify-center bg-surface px-4 py-12">
         <div className="w-full max-w-md">
           <p className="mb-8 text-center font-display text-display font-semibold tracking-tight text-foreground">
-            DocIntel
+            Tensho
           </p>
           <section>
             <header className="mb-8 flex flex-col gap-2 text-center">

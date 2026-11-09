@@ -26,7 +26,7 @@ export function RegisterPage(handle: Handle<RegisterPageProps>) {
     let action = routes.register.action.href()
 
     return (
-      <Document title="Create account · DocIntel">
+      <Document title="Create account · Tensho">
         <AuthShell
           title="Create account"
           subtitle="Create an account to get started."

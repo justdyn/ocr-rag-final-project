@@ -1,6 +1,6 @@
 """Owner-only user-memory endpoints (P0 stub, architecture §8.3).
 
-Mounted only when ``USER_MEMORY_ENABLED`` is on (see ``app.main``); when off
+Mounted only when ``USER_MEMORY_ENABLED`` is on (see ``app.tensho``); when off
 the whole prefix 404s like any unknown route. Cross-user access is 404, not
 403 — same rule as conversations.
 """

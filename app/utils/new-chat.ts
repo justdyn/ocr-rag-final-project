@@ -1,8 +1,8 @@
 /** Custom event so "New chat" can reset setup-scope state when already on `/`. */
-export const NEW_CHAT_EVENT = 'docintel:new-chat'
+export const NEW_CHAT_EVENT = 'tensho:new-chat'
 
 /** Fired after the first successful chat completion creates/returns a conversation_id. */
-export const CONVERSATION_UPSERT_EVENT = 'docintel:conversation-upsert'
+export const CONVERSATION_UPSERT_EVENT = 'tensho:conversation-upsert'
 
 export type ConversationUpsertDetail = {
   knowledgeId: string

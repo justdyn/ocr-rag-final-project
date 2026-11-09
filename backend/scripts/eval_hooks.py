@@ -1,29 +1,25 @@
 #!/usr/bin/env python3
-"""Eval hooks stub (v1-build §12): prints metric names, exits 0 with empty gold.
+"""Kapita Layer 5 eval stub (CG-9): metric names only, empty gold OK."""
 
-No new deps. This is a Phase C minimum stub; full labeled eval comes later.
-"""
 from __future__ import annotations
 
 import sys
 
+METRICS = (
+    "Recall@k (retrieval)",
+    "nDCG@k (retrieval)",
+    "hybrid_rrf vs vector_only (toggle)",
+    "SPJ line field accuracy (rules extract)",
+    "SPJ document_total vs gold sum",
+    "cost_per_chat_call (USD placeholder)",
+    "refusal_rate_out_of_corpus_questions",
+)
+
 
 def main() -> int:
-    # v1-build §12 metric names (verbatim, correct order)
-    metrics = [
-        "Recall@k",
-        "nDCG",
-        "CER / WER",
-        "Field exact-match",
-        "Slot exact-match",
-        "Money invariant",
-    ]
-
-    # Print metric names (one per line) as the stub contract
-    for m in metrics:
-        print(m)
-
-    # Empty gold corpus - exit 0
+    print("DocIntel eval hooks (empty gold — names only)")
+    for name in METRICS:
+        print(f"  - {name}: (no gold loaded)")
     return 0
 
 

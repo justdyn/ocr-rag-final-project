@@ -1,5 +1,5 @@
 name: Bug report
-description: Something broken in DocIntel
+description: Something broken in Tensho
 title: 'bug: '
 labels: ['bug']
 body:

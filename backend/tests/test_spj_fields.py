@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.services.spj_fields import compute_document_total, extract_fields, render_accountability_stub
+from app.services.spj_fields import compute_document_total, extract_fields, extract_spby_header, render_accountability_stub
 
 PARSEABLE = """Kwitansi Pembelian ATK
 Buku tulis Rp 10.000
@@ -123,3 +123,63 @@ def test_stub_empty_lines_renders_no_rows():
     out = render_accountability_stub(_extract(UNPARSEABLE), 0)
     assert "<tr><td>" not in out
     assert "Document Total: 0" in out  # document total of an empty doc is 0
+
+
+def test_idr_comma_decimal_amount():
+    """Honor/perjalanan dinas often use Indonesian comma decimals (UTS slide 7)."""
+    fields = _extract("Honor narasumber Rp 1.000,50")
+    assert len(fields["lines"]) == 1
+    assert fields["lines"][0]["unit_price"] == 1001
+    assert fields["lines"][0]["line_total"] == 1001
+
+
+def test_idr_comma_decimal_honor_qty_x_price():
+    fields = _extract("Honorarium 2 x Rp 500.000,00")
+    line = fields["lines"][0]
+    assert line["qty"] == 2
+    assert line["unit_price"] == 500000
+    assert line["line_total"] == 1000000
+
+
+def test_spby_header_matches_two_gold_forms():
+    honor = (
+        "Tanggal :\n"
+        "26 Juni 2025\n"
+        "Nomor :\n"
+        "Kepada\n"
+        "Dwitami Sekarini S.Pd\n"
+        "Untuk Pembayaran\n"
+        "FSTI : Honorarium instruktur Germas - 1 orang\n"
+        "Kegiatan / Output/MAK\n"
+        "7730.DBA.003.051.S.522151\n"
+        "melakukan pembayaran sejumlah\n"
+        "310000"
+    )
+    mr = (
+        "Tanggal :\n"
+        "9 Februari 2026\n"
+        "Nomor :\n"
+        "Kepada\n"
+        "Dwitami Sekarini S.Pd\n"
+        "Untuk Pembayaran\n"
+        "FSTI - Sistem Informasi : Open Talk - Frame Foto A4 (2 Pcs)\n"
+        "Kegiatan / Output/MAK\n"
+        "7730.DBA.002.051.E.521211\n"
+        "melakukan pembayaran sejumlah\n"
+        "57000"
+    )
+    h1 = extract_spby_header(honor)
+    assert h1["date"] == "26 Juni 2025"
+    assert h1["amount_idr"] == 310000
+    assert h1["uraian"] == "FSTI : Honorarium instruktur Germas - 1 orang"
+    assert h1["payee"] == "Dwitami Sekarini S.Pd"
+    assert h1["mak"] == "7730.DBA.003.051.S.522151"
+    assert h1["nomor"] is None
+
+    h2 = extract_spby_header(mr)
+    assert h2["date"] == "9 Februari 2026"
+    assert h2["amount_idr"] == 57000
+    assert h2["uraian"] == "FSTI - Sistem Informasi : Open Talk - Frame Foto A4 (2 Pcs)"
+    assert h2["payee"] == "Dwitami Sekarini S.Pd"
+    assert h2["mak"] == "7730.DBA.002.051.E.521211"
+    assert h2["nomor"] is None

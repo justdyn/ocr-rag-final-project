@@ -13,7 +13,7 @@ export const SIDEBAR_TRACK_TRANSITION = `max-width ${SIDEBAR_ANIM_MS}ms ${SIDEBA
 export const SIDEBAR_LABEL_TRANSITION = `opacity ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}, max-width ${SIDEBAR_ANIM_MS}ms ${SIDEBAR_EASE}`
 
 /** Header mobile toggle → sidebar open (setup-scope listeners, same pattern as NEW_CHAT_EVENT). */
-export const SIDEBAR_OPEN_EVENT = 'docintel:sidebar-open'
+export const SIDEBAR_OPEN_EVENT = 'tensho:sidebar-open'
 
 export function dispatchSidebarOpen(): void {
   if (typeof window === 'undefined') return

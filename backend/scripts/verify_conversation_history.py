@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
-from app.main import app
+from app.tensho import app
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.user import User

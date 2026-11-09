@@ -1,4 +1,4 @@
-# DocIntel (OCR-RAG)
+# Tensho (OCR-RAG)
 
 Remix 3 BFF + FastAPI app: ingest PDFs/images (Tesseract when needed), hybrid BM25 + MiniLM fused with weighted RRF, cited SSE chat, owner Library.
 
@@ -23,5 +23,5 @@ npm test
 npm run typecheck
 
 # Backend (backend/; Python 3.12.9, project venv)
-# uvicorn app.main:app — see backend/.env.example for LLM_API_KEY and JWT_*
+# uvicorn app.tensho:app — see backend/.env.example for LLM_API_KEY and JWT_*
 ```

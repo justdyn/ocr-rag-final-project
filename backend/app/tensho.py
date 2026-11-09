@@ -1,4 +1,4 @@
-"""FastAPI application entrypoint: `uvicorn app.main:app`."""
+"""FastAPI application entrypoint: `uvicorn app.tensho:app`."""
 
 from contextlib import asynccontextmanager
 

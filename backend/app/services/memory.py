@@ -1,6 +1,6 @@
 """Owner-scoped user-memory CRUD + P1a scored retrieve (architecture §4.1 / §7–8 / §11).
 
-The route mount is flag-gated in ``app.main`` (flag off → 404). Chat-path use is
+The route mount is flag-gated in ``app.tensho`` (flag off → 404). Chat-path use is
 flag-gated in ``prepare_chat`` — this module never checks the flag itself.
 """
 

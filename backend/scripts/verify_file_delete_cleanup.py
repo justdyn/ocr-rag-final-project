@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from app.core.database import AsyncSessionLocal
-from app.main import app
+from app.tensho import app
 from app.models.document_chunk import DocumentChunk
 from app.models.file import File
 from app.models.knowledge import KnowledgeFile

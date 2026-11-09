@@ -83,7 +83,7 @@ const faq: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How does retrieval work?',
-    a: 'DocIntel uses hybrid retrieval: BM25 keyword search fused with dense vector search via weighted Reciprocal Rank Fusion (RRF, c=60). Results are cited inline so you can verify sources. The cosine rerank score is shown for diagnostics only — it does not re-sort the fused results.',
+    a: 'Tensho uses hybrid retrieval: BM25 keyword search fused with dense vector search via weighted Reciprocal Rank Fusion (RRF, c=60). Results are cited inline so you can verify sources. The cosine rerank score is shown for diagnostics only — it does not re-sort the fused results.',
   },
   {
     q: 'Can I chat without attaching a knowledge base?',
@@ -91,7 +91,7 @@ const faq: Array<{ q: string; a: string }> = [
   },
   {
     q: 'What are SPJ accountability letters?',
-    a: 'SPJ (Surat Pertanggungjawaban) is a thesis-domain document type for campus accountability letters. DocIntel extracts structured fields (vendor, date, line items) at ingest. Drafts can be reviewed, confirmed, and exported as HTML. Confidence gating applies — fields below the threshold are flagged for manual review before confirmation.',
+    a: 'SPJ (Surat Pertanggungjawaban) is a thesis-domain document type for campus accountability letters. Tensho extracts structured fields (vendor, date, line items) at ingest. Drafts can be reviewed, confirmed, and exported as HTML. Confidence gating applies — fields below the threshold are flagged for manual review before confirmation.',
   },
   {
     q: 'How is my data stored?',
@@ -111,7 +111,7 @@ export function HelpPanel() {
   return () => (
     <div mix={panelStyle}>
       <section mix={sectionStyle}>
-        <h2 mix={headingStyle}>DocIntel Help</h2>
+        <h2 mix={headingStyle}>Tensho Help</h2>
         <h1 mix={titleStyle}>Frequently Asked Questions</h1>
       </section>
 

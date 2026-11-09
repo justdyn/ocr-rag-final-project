@@ -74,7 +74,7 @@ describe('chat-model-preference', () => {
 
   it('falls back name to id when name missing', () => {
     withSessionStorage((store) => {
-      store.set('docintel.chat.llm_model', JSON.stringify({ id: 'o4-mini' }))
+      store.set('tensho.chat.llm_model', JSON.stringify({ id: 'o4-mini' }))
       assert.deepEqual(readPreferredChatModel(), {
         id: 'o4-mini',
         name: 'o4-mini',
@@ -85,7 +85,7 @@ describe('chat-model-preference', () => {
   it('returns null for empty or corrupt storage', () => {
     withSessionStorage((store) => {
       assert.equal(readPreferredChatModel(), null)
-      store.set('docintel.chat.llm_model', '{')
+      store.set('tensho.chat.llm_model', '{')
       assert.equal(readPreferredChatModel(), null)
     })
   })

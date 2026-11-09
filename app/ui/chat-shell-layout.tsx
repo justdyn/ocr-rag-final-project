@@ -17,7 +17,7 @@ export type ChatShellLayoutProps = {
   userEmail?: string
   userRole?: string
   userProfileImageUrl?: string | null
-  /** Main column — chat panel or DocIntel content wrapper. */
+  /** Main column — chat panel or Tensho content wrapper. */
   children?: RemixNode
 }
 

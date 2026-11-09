@@ -389,7 +389,7 @@ describe('chat shell — viewport-bound layout contract', () => {
     view.cleanup()
   })
 
-  it('DocIntel wide content column is its own full-bleed scroller', () => {
+  it('Tensho wide content column is its own full-bleed scroller', () => {
     let view = render(<main mix={mainContentWideStyle} />)
     let rule = ruleFor(view.$('main'))
     assert.match(rule, /overflow-y:\s*auto/, `wide content owns vertical scroll, got: ${rule}`)

@@ -61,10 +61,10 @@ export const Onboarding = clientEntry(
         data-show={showSplash ? 'true' : 'false'}
         mix={splashFrameStyle}
       >
-        {/* DocIntel favicon instead of the OWUI logo (no favicon-dark asset in this repo). */}
+        /* Tensho favicon instead of the OWUI logo (no favicon-dark asset in this repo). */
         <img
           src="/favicon.svg"
-          alt="DocIntel logo"
+          alt="Tensho logo"
           className="absolute left-10 top-10 z-20 size-6 rounded-full"
         />
 

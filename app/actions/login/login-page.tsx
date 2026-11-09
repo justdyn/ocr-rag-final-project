@@ -22,7 +22,7 @@ export function LoginPage(handle: Handle<LoginPageProps>) {
     let action = routes.login.action.href()
 
     return (
-      <Document title="Sign in · DocIntel">
+      <Document title="Sign in · Tensho">
         {/* Splash + form stay mounted (Remix soft-nav hydration). Hide via data-show. */}
         <Onboarding show={showOnboarding} />
         <AuthShell

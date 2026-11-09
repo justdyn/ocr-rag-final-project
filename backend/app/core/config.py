@@ -19,11 +19,11 @@ class Settings(BaseModel):
     """Process-level settings. Secrets come from env; no demo secrets in code."""
 
     # Product placeholder (PRD §9 Open Item #1)
-    app_name: str = Field(default="docintel")
+    app_name: str = Field(default="tensho")
 
     # Database — async SQLite default; Postgres-compatible URL shape
     database_url: str = Field(
-        default=f"sqlite+aiosqlite:///{(BACKEND_ROOT / 'data' / 'docintel.db').as_posix()}"
+        default=f"sqlite+aiosqlite:///{(BACKEND_ROOT / 'data' / 'tensho.db').as_posix()}"
     )
     # WAL is the default: multi-file upload is a real concurrent-writer load.
     # Override with DATABASE_ENABLE_SQLITE_WAL=0 to keep DELETE journal mode.
@@ -100,9 +100,9 @@ def _env_bool(key: str, default: bool) -> bool:
 
 @lru_cache
 def get_settings() -> Settings:
-    default_db = f"sqlite+aiosqlite:///{(BACKEND_ROOT / 'data' / 'docintel.db').as_posix()}"
+    default_db = f"sqlite+aiosqlite:///{(BACKEND_ROOT / 'data' / 'tensho.db').as_posix()}"
     settings = Settings(
-        app_name=os.getenv("APP_NAME", "docintel"),
+        app_name=os.getenv("APP_NAME", "tensho"),
         database_url=os.getenv("DATABASE_URL", default_db),
         database_enable_sqlite_wal=_env_bool("DATABASE_ENABLE_SQLITE_WAL", True),
         sqlite_busy_timeout_ms=int(os.getenv("SQLITE_BUSY_TIMEOUT_MS", "8000")),

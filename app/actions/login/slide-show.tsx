@@ -5,12 +5,12 @@
  */
 import type { Handle } from 'remix/ui'
 
-/** DocIntel serves the OWUI onboarding photos from /images (public/images). */
+/** Tensho serves the OWUI onboarding photos from /images (public/images). */
 export const SLIDE_SHOW_IMAGES = [
-  '/images/adam.jpg',
-  '/images/galaxy.jpg',
-  '/images/earth.jpg',
-  '/images/space.jpg',
+  '/images/old1.jpg',
+  '/images/old2.jpg',
+  '/images/old3.jpg',
+  '/images/old4.jpg',
 ]
 
 /** Fix for the OWUI off-by-one (`% (length - 1)` skipped the last photo). */

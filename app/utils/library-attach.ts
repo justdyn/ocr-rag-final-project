@@ -1,7 +1,7 @@
 /**
  * Pending chat knowledge after Library "Add to chat" — MainPanel reads once on mount.
  */
-const STORAGE_KEY = 'docintel:pending-chat-knowledge'
+const STORAGE_KEY = 'tensho:pending-chat-knowledge'
 
 export type PendingChatKnowledge = {
   id: string

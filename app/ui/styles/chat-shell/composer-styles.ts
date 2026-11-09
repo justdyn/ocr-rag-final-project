@@ -125,7 +125,7 @@ export const sendButtonStyle = css({
   '&:active': { transform: 'scale(0.94)' },
 })
 
-/** Grayscale status line under the composer — §3.5 shell skin, not DocIntel tokens. */
+/** Grayscale status line under the composer — §3.5 shell skin, not Tensho tokens. */
 export const composerFeedbackStyle = css({
   margin: '8px 12px 0',
   fontSize: '13px',

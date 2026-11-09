@@ -25,7 +25,7 @@ from app.core.config import get_settings, Settings
 from app.core.database import Base, get_db
 from app.core.security import hash_password
 from app.dependencies.auth import get_current_user
-from app.main import create_app
+from app.tensho import create_app
 from app.models.auth import Auth
 from app.models.user import User
 

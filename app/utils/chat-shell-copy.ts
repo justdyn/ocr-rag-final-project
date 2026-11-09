@@ -1,4 +1,4 @@
-/** Grayscale shell copy — preserved verbatim per styleguide §3.5 (not DocIntel tokens). */
+/** Grayscale shell copy — preserved verbatim per styleguide §3.5 (not Tensho tokens). */
 export const SHELL_COPY = {
   title: 'Remix',
   modelName: 'Remix',

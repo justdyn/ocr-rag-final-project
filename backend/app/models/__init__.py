@@ -1,4 +1,4 @@
-"""SQLAlchemy ORM models for DocIntel core entities (PRD §5)."""
+"""SQLAlchemy ORM models for Tensho core entities (PRD §5)."""
 
 from app.models.auth import Auth
 from app.models.conversation import Conversation

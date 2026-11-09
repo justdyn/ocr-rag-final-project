@@ -4,7 +4,7 @@
  */
 export type PreferredChatModel = { id: string; name: string }
 
-const STORAGE_KEY = 'docintel.chat.llm_model'
+const STORAGE_KEY = 'tensho.chat.llm_model'
 
 /** SSR-safe first paint — props only; session preference applied post-hydrate. */
 export function chatModelFirstPaint(initialLlmModel?: string | null): {
