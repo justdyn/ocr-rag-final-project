@@ -3,6 +3,7 @@
  * Extracted because /login and /register share the same visual shell (styleguide §2.5).
  */
 import type { Handle, RemixNode } from 'remix/ui'
+import { TenshoSvg } from './tensho-svg.tsx'
 
 export type AuthShellProps = {
   title: string
@@ -19,9 +20,7 @@ export function AuthShell(handle: Handle<AuthShellProps>) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-surface px-4 py-12">
         <div className="w-full max-w-md">
-          <p className="mb-8 text-center font-display text-display font-semibold tracking-tight text-foreground">
-            Tensho
-          </p>
+          <TenshoSvg className="mx-auto mb-8 h-7 w-auto text-foreground" />
           <section>
             <header className="mb-8 flex flex-col gap-2 text-center">
               <h1 className="text-2xl font-semibold text-foreground">{title}</h1>

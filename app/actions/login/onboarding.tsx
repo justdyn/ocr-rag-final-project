@@ -44,6 +44,11 @@ export const Onboarding = clientEntry(
     let index = 0
 
     handle.queueTask(() => {
+      // Tell the page (e.g. the Tensho logo) whether the splash is covering it.
+      let root = document.documentElement
+      root.dataset.splash = showSplash ? 'open' : 'closed'
+      handle.signal.addEventListener('abort', () => delete root.dataset.splash)
+      
       // prefers-reduced-motion: keep the splash static (no interval rotation).
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
@@ -87,6 +92,7 @@ export const Onboarding = clientEntry(
               mix={on('click', () => {
                 // OWUI getStartedHandler minus the signup/ldap switch — /register keeps its own link.
                 showSplash = false
+                document.documentElement.dataset.splash = 'closed'
                 handle.update()
               })}
               className="rounded-full bg-white/5 p-1 transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
