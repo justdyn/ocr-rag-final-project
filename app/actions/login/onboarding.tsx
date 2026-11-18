@@ -68,18 +68,18 @@ export const Onboarding = clientEntry(
       >
         /* Tensho favicon instead of the OWUI logo (no favicon-dark asset in this repo). */
         <img
-          src="/favicon.svg"
+          src="/tensho.svg"
           alt="Tensho logo"
-          className="absolute left-10 top-10 z-20 size-6 rounded-full"
+          className="absolute left-4 top-4 z-10 size-32"
         />
 
         <SlideShow index={index} />
 
-        {/* OWUI layering: bottom-up dark gradient, then a translucent blur wash. */}
+        {/* Tensho layering: bottom-up dark gradient, then a translucent blur wash. */}
         <div className="absolute inset-0 bg-linear-to-t from-20% from-black to-transparent" />
         <div className="absolute inset-0 bg-black/50 backdrop-blur-xs" />
 
-        <div className="relative z-10 flex min-h-full w-full flex-col items-center justify-end pb-10 text-center">
+        <div className="relative z-10 flex min-h-full w-full flex-col items-center justify-end pb-24 text-center">
           <div className="font-display">
             <Marquee index={index} />
             <div className="mt-1 text-3xl leading-snug lg:text-5xl">wherever you are</div>
@@ -90,7 +90,7 @@ export const Onboarding = clientEntry(
               type="button"
               aria-label="Get started"
               mix={on('click', () => {
-                // OWUI getStartedHandler minus the signup/ldap switch — /register keeps its own link.
+                // Tensho getStartedHandler minus the signup/ldap switch — /register keeps its own link.
                 showSplash = false
                 document.documentElement.dataset.splash = 'closed'
                 handle.update()
