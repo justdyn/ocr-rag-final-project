@@ -3,7 +3,7 @@
  * Composer attach/implicit-KB lives in chat-shell-composer.tsx (§2.2).
  * Viewport follow / ↓ / generating dots: .docs/prd/prds/chat-viewport.md.
  */
-import { clientEntry, ref, type Handle, type SerializableProps } from 'remix/ui'
+import { clientEntry, ref, type Handle, type SerializableProps } from 'remix/component'
 
 import { routes } from '../routes.ts'
 import { ChatDockControls } from './chat-dock-controls.tsx'

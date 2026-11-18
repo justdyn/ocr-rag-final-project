@@ -1,12 +1,12 @@
 /**
- * SPJ Review panel component test (node:test + @remix-run/ui/test + linkedom).
+ * SPJ Review panel component test (node:test + remix/component/test + linkedom).
  * Verifies Confirm POST call, Download link wiring, and empty-state rendering.
  */
 import assert from 'node:assert/strict'
 import { describe, it, before, after } from 'node:test'
 import { parseHTML } from 'linkedom'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -57,7 +57,7 @@ after(() => {
 })
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { routes } = await import('../routes.ts')
 let { SHELL_COPY } = await import('../utils/chat-shell-copy.ts')
 let { SpjReviewPanel } = await import('./spj-review-panel.tsx')

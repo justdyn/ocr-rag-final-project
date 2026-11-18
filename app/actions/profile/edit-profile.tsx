@@ -9,7 +9,7 @@ import {
   type Handle,
   type SerializableProps,
   css,
-} from 'remix/ui'
+} from 'remix/component'
 import { routes } from '../../routes.ts'
 import { animateButtonPending } from '../../utils/motion.ts'
 import { SHELL_LUCIDE_ICON } from '../../utils/chat-shell-icons.ts'

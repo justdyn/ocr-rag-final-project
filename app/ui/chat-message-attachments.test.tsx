@@ -3,7 +3,7 @@
  * popover, a dismiss closes it, and a second click reopens it — the open state
  * must reset on the UA `toggle` event, never on a dialog `close` event.
  *
- * Runs on node:test + the @remix-run/ui/test render harness under linkedom —
+ * Runs on node:test + the remix/component/test render harness under linkedom —
  * same DOM shim as chat-message-bubble.test.tsx. linkedom has no Popover API,
  * so showPopover/hidePopover are stubbed on HTMLElement.prototype: they flip a
  * data-popover-open marker and dispatch the UA-shaped `toggle` event
@@ -13,7 +13,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { parseHTML } from 'linkedom'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -81,7 +81,7 @@ function click(el: Element): void {
 }
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { ChatMessageAttachments } = await import('./chat-message-attachments.tsx')
 import type { ChatAttachment } from '../utils/chat-types.ts'
 

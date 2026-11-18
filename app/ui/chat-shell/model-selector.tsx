@@ -2,7 +2,7 @@
  * Header generalist LLM picker — debounced search + lazy-loaded list (MS-7).
  * Nested inside chat-shell-main-panel clientEntry (closures OK; not a clientEntry).
  */
-import { on, ref, type Handle } from 'remix/ui'
+import { on, ref, type Handle } from 'remix/component'
 
 import { routes } from '../../routes.ts'
 import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'

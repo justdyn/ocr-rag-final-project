@@ -2,7 +2,7 @@
  * Server-side content column for Files/Knowledge inside grayscale shell (§3.5 + accepted contrast).
  * Header is a sibling clientEntry so mobile sidebar-open hydrates without nesting LibraryPanel.
  */
-import type { Handle, RemixNode } from 'remix/ui'
+import type { Handle, RemixNode } from 'remix/component'
 
 import type { ShellLucideIconKey } from '../utils/chat-shell-icons.ts'
 import { ChatShellContentHeader } from './chat-shell-content-header.tsx'

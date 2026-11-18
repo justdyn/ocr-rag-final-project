@@ -1,4 +1,4 @@
-import { navigate, on, type Handle } from 'remix/ui'
+import { navigate, on, type Handle } from 'remix/component'
 
 import {
   sidebarItemActiveStyle,

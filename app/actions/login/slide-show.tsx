@@ -3,7 +3,7 @@
  * Ported from Open WebUI SlideShow.svelte: one cover-fit layer per image, 1s opacity crossfade.
  * The rotation timer lives in Onboarding — this component is render-only (one clientEntry owns timers).
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 /** Tensho serves the OWUI onboarding photos from /images (public/images). */
 export const SLIDE_SHOW_IMAGES = [

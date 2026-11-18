@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css } from 'remix/component'
 
 import { EASE_OUT_PREMIUM } from '../../../utils/easing.ts'
 

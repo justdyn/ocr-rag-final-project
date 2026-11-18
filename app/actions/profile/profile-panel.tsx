@@ -3,7 +3,7 @@
  * Grayscale hex/css() shell skin per styleguide §3.5 (Account surfaces).
  * Edit lives in shell header trailing (profile-view-layout). No React hooks.
  */
-import { css } from 'remix/ui'
+import { css } from 'remix/component'
 import { routes } from '../../routes.ts'
 
 const panelStyle = css({

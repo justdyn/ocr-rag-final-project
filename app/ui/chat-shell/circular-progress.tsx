@@ -2,7 +2,7 @@
  * 28px SVG progress ring. CSS stroke-dashoffset transition — no Framer Motion.
  * Isolated in app/ui/chat-shell/ so composer ticks don't need a second animation stack.
  */
-import { css, type Handle } from 'remix/ui'
+import { css, type Handle } from 'remix/component'
 
 import { circularProgressStroke } from '../../utils/circular-progress.ts'
 

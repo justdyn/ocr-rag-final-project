@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css } from 'remix/component'
 
 /** SPJ Review panel styles (grayscale shell language, §3.5). */
 

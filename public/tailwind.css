@@ -833,6 +833,9 @@
   }
 }
 @layer base, rmx-reset, rmx;
+html:has([data-attachment-preview]:popover-open) {
+  overflow: hidden;
+}
 @keyframes attach-ring-spin {
   from {
     transform: rotate(-90deg);

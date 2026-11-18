@@ -3,7 +3,7 @@
  * Grayscale hex/css() shell skin per styleguide §3.5 (Account surfaces).
  * Single-column, generous whitespace, no search.
  */
-import { css } from 'remix/ui'
+import { css } from 'remix/component'
 
 const panelStyle = css({
   display: 'flex',

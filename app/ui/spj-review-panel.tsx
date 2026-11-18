@@ -9,7 +9,7 @@ import {
   type SerializableProps,
   type SerializableValue,
   css,
-} from 'remix/ui'
+} from 'remix/component'
 
 import { routes } from '../routes.ts'
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'

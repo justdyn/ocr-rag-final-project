@@ -24,6 +24,10 @@
 
 @layer base, rmx-reset, rmx;
 
+html:has([data-attachment-preview]:popover-open) {
+  overflow: hidden;
+}
+
 /* Composer thumbnail ring — named here because Remix css() has no @keyframes. */
 @keyframes attach-ring-spin {
   from {

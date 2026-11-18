@@ -3,8 +3,8 @@
  * variant="auth" (default): auth floating-label chrome (styleguide §2.5) — login + register.
  * variant="shell": §3.5 settings input chrome — Settings modal fields + search.
  */
-import { on } from 'remix/ui'
-import type { Handle, RemixNode } from 'remix/ui'
+import { on } from 'remix/component'
+import type { Handle, RemixNode } from 'remix/component'
 
 import {
   settingsModalLabelStyle,
@@ -135,7 +135,7 @@ export function FormField(handle: Handle<FormFieldProps>) {
       name,
       autoComplete: autocomplete,
       required,
-      // Bug fix: use defaultValue (uncontrolled). `value` is controlled in remix/ui and
+      // Bug fix: use defaultValue (uncontrolled). `value` is controlled in remix/component and
       // would reset on re-render with no onChange/update path.
       defaultValue,
       placeholder: ' ',

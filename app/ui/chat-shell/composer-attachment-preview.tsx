@@ -3,8 +3,7 @@
  * stacking, Escape + outside-click light dismiss; scroll-lock rides along.
  * Composer owns open/close state — this component only mirrors it to the DOM.
  */
-import { on, ref, type Handle } from 'remix/ui'
-import { lockScrollOnToggle } from 'remix/ui/scroll-lock'
+import { on, ref, type Handle } from 'remix/component'
 
 import { SHELL_LUCIDE_ICON } from '../../utils/chat-shell-icons.ts'
 import type { AttachmentPreview } from '../../utils/composer-attachments.ts'
@@ -50,11 +49,11 @@ export function ComposerAttachmentPreview(handle: Handle<ComposerAttachmentPrevi
       <div
         id="composer-attachment-preview"
         popover="auto"
+        data-attachment-preview=""
         role="dialog"
         aria-label={preview ? `Preview ${preview.filename}` : 'Attachment preview'}
         mix={[
           composerPreviewBackdropStyle,
-          lockScrollOnToggle(),
           ref((node) => {
             dialogEl = node as HTMLDivElement
           }),

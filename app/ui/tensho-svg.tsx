@@ -12,7 +12,7 @@
  * - Optionally respects `prefers-reduced-motion` (see `respectReducedMotion`).
  * - Uses a fixed clipPath id, so render only one instance per page.
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 export type TenshoSvgProps = {
   className?: string

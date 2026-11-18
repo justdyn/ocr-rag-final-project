@@ -1,5 +1,5 @@
 /**
- * Profile edit panel component test (node:test + @remix-run/ui/test + linkedom).
+ * Profile edit panel component test (node:test + remix/component/test + linkedom).
  * Verifies render, error display, and form structure (§3.5 click-avatar + shell FormField).
  * Note: Form submit interaction tests omitted due to test renderer limitations with on('submit') handlers.
  */
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { describe, it, before, after } from 'node:test'
 import { parseHTML } from 'linkedom'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -58,7 +58,7 @@ after(() => {
 })
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { routes } = await import('../../routes.ts')
 let { EditProfilePanel } = await import('./edit-profile.tsx')
 

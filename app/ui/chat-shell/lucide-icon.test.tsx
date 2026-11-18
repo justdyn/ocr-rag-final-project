@@ -43,7 +43,7 @@ class FakeCSSStyleSheet {
 globals.CSSStyleSheet = FakeCSSStyleSheet
 ;(dom.document as unknown as { adoptedStyleSheets: unknown[] }).adoptedStyleSheets = []
 
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { LucideIcon, lucideIconSignature } = await import('./lucide-icon.tsx')
 
 describe('LucideIcon glyph integrity', () => {

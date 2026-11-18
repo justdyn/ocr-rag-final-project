@@ -17,7 +17,7 @@ async function sessionCookieHeader(token: string): Promise<string> {
   session.set(ACCESS_TOKEN_KEY, token)
   let raw = await sessionStorage.save(session)
   assert.ok(raw)
-  let setCookie = await sessionCookie.serialize(raw)
+  let setCookie = await sessionCookie.serialize(JSON.stringify({ value: raw, expires: Date.now() + 60_000 }))
   return setCookie.split(';')[0]!
 }
 

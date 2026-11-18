@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css } from 'remix/component'
 
 import { SIDEBAR_DESKTOP_MIN_PX } from '../../../utils/chat-shell-sidebar.ts'
 

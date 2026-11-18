@@ -4,8 +4,7 @@
  * composer-attachment-preview.tsx — always-rendered popover="auto" (UA
  * display:none when closed, so the never-conditionally-unmount rule holds).
  */
-import { on, ref, type Handle } from 'remix/ui'
-import { lockScrollOnToggle } from 'remix/ui/scroll-lock'
+import { on, ref, type Handle } from 'remix/component'
 
 import { routes } from '../routes.ts'
 import { attachmentIsImage, type ChatAttachment } from '../utils/chat-types.ts'
@@ -98,13 +97,13 @@ export function ChatMessageAttachments(handle: Handle<ChatMessageAttachmentsProp
         {row}
         <div
           popover="auto"
+          data-attachment-preview=""
           role="dialog"
           aria-label={
             openAttachment ? `Preview ${openAttachment.filename}` : 'Attachment preview'
           }
           mix={[
             composerPreviewBackdropStyle,
-            lockScrollOnToggle(),
             ref((node) => {
               dialogEl = node as HTMLDivElement
             }),

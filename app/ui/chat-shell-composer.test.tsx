@@ -1,14 +1,13 @@
 /**
- * ChatShellComposer component test (node:test + @remix-run/ui/test + linkedom).
+ * ChatShellComposer component test (node:test + remix/component/test + linkedom).
  * Verifies Draft SPJ button renders, POST create call, and loading state on success.
  * Also tests 422 error notice and no navigation on failure.
  */
 import assert from 'node:assert/strict'
 import { describe, it, before, after } from 'node:test'
 import { parseHTML } from 'linkedom'
-import process from 'node:process'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -46,25 +45,7 @@ class FakeCSSStyleSheet {
 globals.CSSStyleSheet = FakeCSSStyleSheet
 ;(dom.document as unknown as { adoptedStyleSheets: unknown[] }).adoptedStyleSheets = []
 
-// Suppress unhandled rejection from unmocked navigate() in success test
-// The navigate call happens after fetch resolves; we only assert fetch args.
-let originalHandlers = process.listeners('unhandledRejection')
-before(() => {
-  process.removeAllListeners('unhandledRejection')
-  process.on('unhandledRejection', (reason) => {
-    if (reason instanceof TypeError && reason.message.includes('navigate')) {
-      // Suppress this specific error
-      return
-    }
-    // Re-throw others by not handling them (no default handler means test fails)
-    throw reason
-  })
-})
-
-after(() => {
-  process.removeAllListeners('unhandledRejection')
-  for (let h of originalHandlers) process.on('unhandledRejection', h)
-})
+globals.location = { assign() {} }
 
 // Mock fetch globally
 let originalFetch = globalThis.fetch
@@ -80,7 +61,7 @@ after(() => {
 })
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { routes } = await import('../routes.ts')
 let { SHELL_COPY } = await import('../utils/chat-shell-copy.ts')
 let { ChatShellComposer } = await import('./chat-shell-composer.tsx')

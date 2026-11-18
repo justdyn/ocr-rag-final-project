@@ -7,7 +7,7 @@ import { redirect } from 'remix/response/redirect'
 import * as s from 'remix/data-schema'
 import * as f from 'remix/data-schema/form-data'
 import { minLength, maxLength } from 'remix/data-schema/checks'
-import type { RemixNode } from 'remix/ui'
+import type { RemixNode } from 'remix/component'
 
 import { updateProfileName, changePassword, fetchCurrentUser, uploadAvatar, getAvatar } from '../../data/auth.ts'
 import { requireAuthFromSession } from '../../middleware/require-auth.ts'

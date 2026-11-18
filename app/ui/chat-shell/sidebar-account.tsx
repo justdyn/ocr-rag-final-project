@@ -3,8 +3,8 @@
  * Open/close lives in ChatSidebar clientEntry (nested clientEntry does not hydrate).
  * Profile/Help are real links; Settings opens a modal (no route).
  */
-import type { RemixNode } from 'remix/ui'
-import { on } from 'remix/ui'
+import type { RemixNode } from 'remix/component'
+import { on } from 'remix/component'
 import { routes } from '../../routes.ts'
 import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'
 import { SHELL_LUCIDE_ICON } from '../../utils/chat-shell-icons.ts'

@@ -2,7 +2,7 @@
  * Heroicons outline arrow-right-circle (MIT), ported verbatim from Open WebUI
  * ArrowRightCircle.svelte for the onboarding Get started control (route-local, styleguide §2.1).
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 export function ArrowRightCircle(handle: Handle<{ className?: string; strokeWidth?: string }>) {
   return () => {

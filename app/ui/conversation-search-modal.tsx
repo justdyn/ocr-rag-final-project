@@ -4,7 +4,7 @@
  * an AbortController, stale ticks dropped. Rows navigate via shellChatHref. No React
  * hooks / <motion.*>.
  */
-import { on, ref, type Handle } from 'remix/ui'
+import { on, ref, type Handle } from 'remix/component'
 
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import { SHELL_LUCIDE_ICON } from '../utils/chat-shell-icons.ts'

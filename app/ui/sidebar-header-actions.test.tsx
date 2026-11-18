@@ -42,7 +42,7 @@ class FakeCSSStyleSheet {
 globals.CSSStyleSheet = FakeCSSStyleSheet
 ;(dom.document as unknown as { adoptedStyleSheets: unknown[] }).adoptedStyleSheets = []
 
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let {
   sidebarHeaderActionsStyle,
   sidebarHomeLinkStyle,
