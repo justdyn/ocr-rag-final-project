@@ -3,7 +3,7 @@
  * textarea is not updated on every XHR tick (Remix setup-scope isolation).
  * Hover-delete is draft-only — this strip is never used in conversation history.
  */
-import { on, type Handle } from 'remix/ui'
+import { on, type Handle } from 'remix/component'
 
 import { SHELL_LUCIDE_ICON } from '../../utils/chat-shell-icons.ts'
 import {

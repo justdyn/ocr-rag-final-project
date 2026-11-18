@@ -2,7 +2,7 @@
  * Document + shell chrome for non-chat pages (Profile, Help, Library, SPJ review).
  * Chat LLM surface stays on ChatShellPage.
  */
-import type { Handle, RemixNode } from 'remix/ui'
+import type { Handle, RemixNode } from 'remix/component'
 
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import type { ShellLucideIconKey } from '../utils/chat-shell-icons.ts'

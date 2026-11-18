@@ -2,7 +2,7 @@
  * Shared auth page chrome (brand, title, card panel, footer link).
  * Extracted because /login and /register share the same visual shell (styleguide §2.5).
  */
-import type { Handle, RemixNode } from 'remix/ui'
+import type { Handle, RemixNode } from 'remix/component'
 import { TenshoSvg } from './tensho-svg.tsx'
 
 export type AuthShellProps = {

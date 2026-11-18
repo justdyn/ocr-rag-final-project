@@ -4,7 +4,7 @@
  * fetches live here. Search is a local nav filter (labels + synonyms) — no network call;
  * each tick owns an AbortController, stale ticks dropped. No React hooks / <motion.*>.
  */
-import { on, ref, type Handle } from 'remix/ui'
+import { on, ref, type Handle } from 'remix/component'
 
 import { routes } from '../routes.ts'
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'

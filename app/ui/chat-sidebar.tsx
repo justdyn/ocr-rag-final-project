@@ -1,7 +1,7 @@
 /**
  * Primary app sidebar — shared chrome for chat shell (app/ui/, §2.1 / §3.5).
  */
-import { clientEntry, on, ref, type Handle, type SerializableProps } from 'remix/ui'
+import { clientEntry, on, ref, type Handle, type SerializableProps } from 'remix/component'
 
 import { routes } from '../routes.ts'
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'

@@ -7,7 +7,6 @@ import { after, before, describe, it } from 'node:test'
 
 import { nextSlideIndex } from './slide-show.tsx'
 import { requireAuth } from '../../middleware/require-auth.ts'
-import { ACCESS_TOKEN_KEY, sessionCookie, sessionStorage } from '../../middleware/session.ts'
 import { router } from '../../router.ts'
 import { routes } from '../../routes.ts'
 import { loginHref } from '../../utils/login-href.ts'
@@ -39,10 +38,8 @@ function setCookieFromResponse(response: Response): string {
 }
 
 async function readTokenFromCookieHeader(cookieHeader: string): Promise<string | null> {
-  let raw = await sessionCookie.parse(cookieHeader)
-  let session = await sessionStorage.read(raw)
-  let value = session.get(ACCESS_TOKEN_KEY)
-  return typeof value === 'string' ? value : null
+  let auth = await requireAuth(new Request('http://localhost', { headers: { Cookie: cookieHeader } }))
+  return typeof auth === 'string' ? auth : null
 }
 
 before(() => {

@@ -1,7 +1,7 @@
 /**
  * Always-mounted ↓ fab + generating dots above the composer (prd-chat-viewport CV-4/CV-5).
  */
-import { on, ref, type Handle } from 'remix/ui'
+import { on, ref, type Handle } from 'remix/component'
 
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import { SHELL_LUCIDE_ICON } from '../utils/chat-shell-icons.ts'

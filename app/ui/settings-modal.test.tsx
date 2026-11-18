@@ -1,5 +1,5 @@
 /**
- * Settings modal component test (node:test + @remix-run/ui/test + linkedom).
+ * Settings modal component test (node:test + remix/component/test + linkedom).
  * Verifies Account/Password panes replaced General stubs: default pane,
  * pane toggle, form fields, and admin-only LLM nav.
  */
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { describe, it, before, after } from 'node:test'
 import { parseHTML } from 'linkedom'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -60,7 +60,7 @@ after(() => {
 })
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { SettingsModal } = await import('./settings-modal.tsx')
 
 function makeProps(overrides: Partial<{ userRole: 'admin' | 'user' }> = {}) {

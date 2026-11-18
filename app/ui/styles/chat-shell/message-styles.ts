@@ -1,4 +1,4 @@
-import { css } from 'remix/ui'
+import { css } from 'remix/component'
 
 /**
  * Chat thread turn styles — ChatGPT-style conversation layout on the §3.5

@@ -1,7 +1,7 @@
 /**
  * Component tests for chat thread turn markup (ChatGPT-style layout, §3.5 skin).
  *
- * Runs on node:test + the @remix-run/ui/test render harness under linkedom.
+ * Runs on node:test + the remix/component/test render harness under linkedom.
  * linkedom has no CSSOM, so a minimal CSSStyleSheet facade is installed and
  * `css()` mixin rules are asserted from `document.adoptedStyleSheets` — the
  * layout contract (right-aligned pill, flush prose) is checked against the
@@ -11,7 +11,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { parseHTML } from 'linkedom'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -53,7 +53,7 @@ globals.CSSStyleSheet = FakeCSSStyleSheet
 ;(dom.document as unknown as { adoptedStyleSheets: unknown[] }).adoptedStyleSheets = []
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { ChatMessageBubble } = await import('./chat-message-bubble.tsx')
 import type { ChatAttachment, ChatMessage } from '../utils/chat-types.ts'
 

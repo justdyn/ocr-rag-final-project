@@ -1,5 +1,5 @@
 /**
- * Conversation search modal component test (node:test + @remix-run/ui/test + linkedom).
+ * Conversation search modal component test (node:test + remix/component/test + linkedom).
  * Verifies: empty query shows all rows, case-insensitive title filter, debounce cancel
  * on close drops stale ticks, dialog chrome, and mobile inset CSS.
  */
@@ -7,7 +7,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { parseHTML } from 'linkedom'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -51,7 +51,7 @@ globals.CSSStyleSheet = FakeCSSStyleSheet
 ;(dom.document as unknown as { adoptedStyleSheets: unknown[] }).adoptedStyleSheets = []
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { ConversationSearchModal } = await import('./conversation-search-modal.tsx')
 
 const CONVERSATIONS = [

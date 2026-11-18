@@ -2,7 +2,7 @@
  * Chat composer: draft, multi-file attach, implicit KB bind (extracted to stay under 500 lines, §2.2).
  * Regular component (not clientEntry) — lives inside ChatShellMainPanel's hydrated tree.
  */
-import { navigate, on, ref, type Handle } from 'remix/ui'
+import { navigate, on, ref, type Handle } from 'remix/component'
 
 import { routes } from '../routes.ts'
 import { COMPOSER_UPLOAD_CONCURRENCY, mapPool } from '../utils/async-pool.ts'

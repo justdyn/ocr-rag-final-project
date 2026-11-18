@@ -2,8 +2,8 @@
  * Settings → LLM / API pane (§3.5, admin-only). Presentational: state + fetches live in
  * settings-modal host. Loads/saves via routes.settings.admin.llmConfig.
  */
-import { on } from 'remix/ui'
-import type { Handle } from 'remix/ui'
+import { on } from 'remix/component'
+import type { Handle } from 'remix/component'
 
 import { FormField } from './form-field.tsx'
 import {

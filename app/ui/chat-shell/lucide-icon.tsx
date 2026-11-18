@@ -1,6 +1,6 @@
 import type { IconNode } from 'lucide'
-import type { Handle, RemixNode } from 'remix/ui'
-import { css } from 'remix/ui'
+import type { Handle, RemixNode } from 'remix/component'
+import { css } from 'remix/component'
 
 import type { ShellLucideIconProps } from '../../utils/chat-shell-icons.ts'
 

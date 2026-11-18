@@ -2,7 +2,7 @@
  * One chat turn — ChatGPT-style conversation layout: right-aligned user pill,
  * flush assistant prose (no card), citations inline on assistant turns.
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 import { ChatMessageAttachments } from './chat-message-attachments.tsx'
 import { ChatCitationReveal } from './chat-citation-reveal.tsx'

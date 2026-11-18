@@ -2,7 +2,7 @@
  * Shell top bar — guest login/signup, or model/title control.
  * Mobile: sidebar-open toggle + title share one flex row (no FAB collision).
  */
-import { on, type Handle, type RemixNode } from 'remix/ui'
+import { on, type Handle, type RemixNode } from 'remix/component'
 
 import { routes } from '../../routes.ts'
 import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'

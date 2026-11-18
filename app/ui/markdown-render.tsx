@@ -7,7 +7,7 @@
  * ChatCitationReveal with the structured `sources` event.
  * Not a clientEntry — stateless subtree of ChatMessageBubble's clientEntry.
  */
-import type { Handle, RemixNode } from 'remix/ui'
+import type { Handle, RemixNode } from 'remix/component'
 import type {
   PhrasingContent,
   Root,

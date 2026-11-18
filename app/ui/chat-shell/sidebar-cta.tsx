@@ -1,4 +1,4 @@
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'
 import {

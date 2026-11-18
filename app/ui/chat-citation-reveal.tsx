@@ -1,7 +1,7 @@
 /**
  * Citation chip + expandCollapse source reveal (styleguide §5.2 expandCollapse reuse).
  */
-import { on, ref, type Handle } from 'remix/ui'
+import { on, ref, type Handle } from 'remix/component'
 
 import type { ChatSource } from '../utils/chat-types.ts'
 import { citationFileLabel } from '../utils/chat-citations.ts'

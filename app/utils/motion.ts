@@ -1,10 +1,10 @@
 /**
  * Shared motion presets (styleguide §5.2).
- * Remix 3 is not React — use framer-motion/dom `animate()` + remix/ui/animation mixins,
+ * Remix 3 is not React — use framer-motion/dom `animate()` + @remix-run/ui/animation mixins,
  * not React `motion.*` components (those need a React runtime).
  */
 import { animate } from 'framer-motion/dom'
-import { animateEntrance, spring } from 'remix/ui/animation'
+import { animateEntrance, spring } from '@remix-run/ui/animation'
 
 export { animate }
 

@@ -2,7 +2,7 @@
  * Document + shell wrapper for LLM chat (`/` and `/chat/:id`).
  * Non-chat routes use AppShellPage.
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 import { SHELL_COPY } from '../utils/chat-shell-copy.ts'
 import type { ConversationSummary } from '../utils/chat-types.ts'

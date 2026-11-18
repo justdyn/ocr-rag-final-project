@@ -1,6 +1,6 @@
 /**
  * Shared browser-side chat SSE helpers — reused by shell composer and knowledge panel (§2.5).
- * utils/ owns pure/stream logic; no imports from app/actions or remix/ui/server.
+ * utils/ owns pure/stream logic; no imports from app/actions or remix/component/server.
  */
 import { routes } from '../routes.ts'
 import { crossedSentenceBoundary } from './chat-citations.ts'

@@ -1,7 +1,7 @@
 /**
  * Login page UI — route-local under actions/login (single-route owner, styleguide §2.1).
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 import { routes } from '../../routes.ts'
 import { AuthShell, authSubmitClassName } from '../../ui/auth-shell.tsx'

@@ -33,11 +33,11 @@ function resolveAssetWatch(): boolean {
 export const assetServer = createAssetServer({
   basePath: '/assets',
   rootDir,
-  fileMap: {
-    'app/*path': 'app/*path',
-    'node_modules/*path': 'node_modules/*path',
+  mounts: {
+    app: 'app',
+    node_modules: 'node_modules',
   },
-  allow: [
+  allowFiles: [
     'app/assets/**',
     'app/actions/**',
     'app/ui/**',
@@ -46,7 +46,7 @@ export const assetServer = createAssetServer({
     'node_modules/**',
     `${realNodeModulesDir}/**`,
   ],
-  deny: ['app/**/*.server.*'],
+  denyFiles: ['app/**/*.server.*'],
   watch: resolveAssetWatch(),
   sourceMaps: process.env.NODE_ENV === 'development' ? 'external' : undefined,
   scripts: {

@@ -4,7 +4,7 @@
  * at ≤ SIDEBAR_MOBILE_MAX_PX the Prev/Next words hide (aria-labels carry the
  * name) and the buttons go icon-only.
  *
- * Runs on node:test + the @remix-run/ui/test render harness under linkedom,
+ * Runs on node:test + the remix/component/test render harness under linkedom,
  * mirroring chat-shell-layout-styles.test.tsx (no CSSOM → FakeCSSStyleSheet;
  * css() rules asserted from document.adoptedStyleSheets).
  */
@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { parseHTML } from 'linkedom'
 
-// --- DOM shim (must run before any remix/ui import) -------------------------
+// --- DOM shim (must run before any remix/component import) -------------------------
 let dom = parseHTML('<!doctype html><html><body></body></html>')
 let globals = globalThis as Record<string, unknown>
 for (let key of [
@@ -54,7 +54,7 @@ globals.CSSStyleSheet = FakeCSSStyleSheet
 ;(dom.document as unknown as { adoptedStyleSheets: unknown[] }).adoptedStyleSheets = []
 
 // --- dynamic imports after the shim -----------------------------------------
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { SHELL_COPY } = await import('../utils/chat-shell-copy.ts')
 let { SIDEBAR_MOBILE_MAX_PX } = await import('../utils/chat-shell-sidebar.ts')
 let { libraryPageButtonStyle, libraryPaginationStyle } = await import(

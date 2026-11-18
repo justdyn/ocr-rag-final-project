@@ -1,7 +1,7 @@
 /**
  * Register page UI — route-local under actions/register (single-route owner).
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 import { routes } from '../../routes.ts'
 import { loginHref } from '../../utils/login-href.ts'

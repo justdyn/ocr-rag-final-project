@@ -7,7 +7,7 @@
  * the shared 5s clock that rotates both SlideShow and Marquee. Splash and the Sign in form beneath
  * are always mounted — hiding is data-show + CSS (opacity/visibility/pointer-events), never unmount.
  */
-import { clientEntry, css, on, type Handle } from 'remix/ui'
+import { clientEntry, css, on, type Handle } from 'remix/component'
 
 import { ArrowRightCircle } from './arrow-right-circle.tsx'
 import { Marquee } from './marquee.tsx'

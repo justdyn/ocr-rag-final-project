@@ -3,7 +3,7 @@
  * Ported from Open WebUI Marquee.svelte (fly-up entrance per word). Render-only: the shared
  * onboarding clock passes `index`, so the single clientEntry timer drives slides and words alike.
  */
-import { css, type Handle } from 'remix/ui'
+import { css, type Handle } from 'remix/component'
 
 /** The ten OWUI onboarding lines, verbatim. */
 export const MARQUEE_WORDS = [

@@ -1,7 +1,7 @@
 /**
  * Home route page — guest empty state or authenticated chat landing (actions/, §2.1).
  */
-import type { Handle } from 'remix/ui'
+import type { Handle } from 'remix/component'
 
 import { ChatShellPage, type ChatShellPageProps } from '../ui/chat-shell-page.tsx'
 

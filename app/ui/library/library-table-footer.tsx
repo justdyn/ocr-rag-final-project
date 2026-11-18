@@ -1,7 +1,7 @@
 /**
  * Library data-table footer — rows-per-page + page buttons (render helper).
  */
-import { on } from 'remix/ui'
+import { on } from 'remix/component'
 
 import { SHELL_COPY } from '../../utils/chat-shell-copy.ts'
 import { pageRange, showingRange, totalPages } from '../../utils/library-pagination.ts'

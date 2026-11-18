@@ -68,5 +68,16 @@ export function clearAccessToken(session: Session): void {
 /** Read a session from a raw Request cookie header (for helpers outside middleware). */
 export async function readSessionFromRequest(request: Request): Promise<Session> {
   let raw = await sessionCookie.parse(request.headers.get('Cookie'))
-  return sessionStorage.read(raw)
+  if (raw) {
+    try {
+      // Remix wraps signed session values with a server-checked expiration.
+      let data = JSON.parse(raw)
+      if (typeof data?.value === 'string' && Number.isFinite(data.expires) && data.expires > Date.now()) {
+        return sessionStorage.read(data.value)
+      }
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) throw error
+    }
+  }
+  return sessionStorage.read(null)
 }

@@ -2,7 +2,7 @@
  * Hydrated header for non-chat shell bodies (Library, etc.).
  * Sibling clientEntry — do not nest under LibraryPanel (nested clientEntry does not hydrate).
  */
-import { clientEntry, type Handle, type SerializableProps } from 'remix/ui'
+import { clientEntry, type Handle, type SerializableProps } from 'remix/component'
 
 import type { ShellLucideIconKey } from '../utils/chat-shell-icons.ts'
 import { ShellMainHeader } from './chat-shell/main-header.tsx'

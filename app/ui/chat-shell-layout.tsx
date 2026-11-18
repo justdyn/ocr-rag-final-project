@@ -1,7 +1,7 @@
 /**
  * Unified ChatGPT-style app chrome — sidebar + main column (app/ui/, §2.1).
  */
-import type { Handle, RemixNode } from 'remix/ui'
+import type { Handle, RemixNode } from 'remix/component'
 
 import { shellStyle } from './styles/chat-shell/shell-styles.ts'
 import { ChatSidebar, type ShellActiveNav } from './chat-sidebar.tsx'

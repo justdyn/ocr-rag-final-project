@@ -2,8 +2,8 @@
  * Settings → Password pane (§3.5). Presentational: state + save live in settings-modal host.
  * Saves via routes.settings.password; new password min length 8 enforced client + server.
  */
-import { on } from 'remix/ui'
-import type { Handle } from 'remix/ui'
+import { on } from 'remix/component'
+import type { Handle } from 'remix/component'
 
 import { FormField } from './form-field.tsx'
 import {

@@ -60,7 +60,7 @@ after(() => {
   globalThis.fetch = originalFetch
 })
 
-let { render } = await import('@remix-run/ui/test')
+let { render } = await import('remix/component/test')
 let { ChatModelSelector } = await import('./model-selector.tsx')
 let { SHELL_COPY } = await import('../../utils/chat-shell-copy.ts')
 
