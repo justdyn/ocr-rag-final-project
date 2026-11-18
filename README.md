@@ -1,4 +1,6 @@
-# Tensho (OCR-RAG)
+<p align="center">
+  <img src="public/tensho.png" alt="Alt text" width="400" />
+</p>
 
 Remix 3 BFF + FastAPI app: ingest PDFs/images (Tesseract when needed), hybrid BM25 + MiniLM fused with weighted RRF, cited SSE chat, owner Library.
 
